@@ -7,7 +7,7 @@ import { ProgressBar, StatusChip } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (s: Record<string, unknown>): { q?: string | undefined } => ({ q: typeof s.q === "string" && s.q ? s.q : undefined }),
+  validateSearch: (s: Record<string, unknown>): { q?: string | undefined } => ({ q: typeof s["q"] === "string" && s["q"] ? s["q"] : undefined }),
   head: () => ({
     meta: [
       { title: "專案總控台 · Project Command Center" },

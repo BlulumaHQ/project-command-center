@@ -21,7 +21,7 @@ function withState(p: Project): Project {
   if (!p.detail) return p;
   return { ...p, detail: { ...p.detail, tasks: p.detail.tasks.map((t) => {
     const k = `${p.id}:${t.id}`;
-    return k in overrides ? { ...t, done: overrides[k] } : t;
+    return k in overrides ? { ...t, done: overrides[k] === true } : t;
   }) } };
 }
 
