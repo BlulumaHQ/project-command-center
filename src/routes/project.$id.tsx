@@ -67,7 +67,7 @@ function ProjectPage() {
           </div>
           <div className="space-y-1 text-sm">
             {d && <div className="font-medium">{pr.done} / {pr.total} 完成</div>}
-            {d && phaseIdx >= 0 && <div className="text-muted-foreground">第 {phaseIdx + 1} 階段 / {d.phases.length} · {d.phases[phaseIdx].title}</div>}
+            {d && phaseIdx >= 0 && <div className="text-muted-foreground">第 {phaseIdx + 1} 階段 / {d.phases.length} · {d.phases[phaseIdx]?.title}</div>}
             <div className="text-muted-foreground">更新 {p.updated}</div>
           </div>
         </div>
