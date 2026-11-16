@@ -3,7 +3,7 @@ export type Status = "progress" | "waiting" | "deadline" | "almost" | "done";
 export type StepState = "done" | "now" | "locked";
 export type TaskGroup = "next" | "later" | "done";
 
-export interface Task { id: string; title: string; note?: string | undefined; group: TaskGroup; done: boolean; }
+export interface Task { id: string; title: string; note?: string | undefined; group: TaskGroup; done: boolean; status: import("./tasks").TaskStatus; dueDate: string | null; doneAt: string | null; }
 export interface Phase { title: string; detail?: string; state: StepState; }
 export interface LinkRow { label: string; value: string; }
 export interface ProjectDetail {

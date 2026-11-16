@@ -1,4 +1,5 @@
 import type { Project, Task, Status, Category, Phase, LinkRow } from "./types";
+import type { TaskStatus } from "./tasks";
 
 export interface ProjectRow {
   id: string; name: string; brand: string; category: Category; status: Status; pct: number;
@@ -6,7 +7,11 @@ export interface ProjectRow {
   now_note: string | null; handoff: string | null; decisions: string[] | null; links: LinkRow[] | null;
   phases: Phase[] | null; undecided: string | null; updated_at: string | null;
 }
-export interface TaskRow { id: string; project_id: string; title: string; note: string | null; grp: "next" | "later"; done: boolean; updated_at: string | null; }
+export interface TaskRow { id: string; project_id: string; title: string; note: string | null; grp: "next" | "later"; done: boolean; updated_at: string | null;
+  status: TaskStatus | null; due_date: string | null; done_at: string | null; sort: number | null; }
+export interface NoteRow { id: string; project_id: string | null; body: string; processed: boolean; reply: string | null; created_at: string; processed_at: string | null; }
+
+export function taskStatus(t: Pick<TaskRow, "status" | "done">): TaskStatus { return t.status ?? (t.done ? "done" : "todo"); }
 export interface LogRow { id: string; project_id: string; summary: string; created_at: string; }
 
 export function formatDate(value: string | null | undefined, time = false) {
@@ -20,9 +25,10 @@ export function formatDate(value: string | null | undefined, time = false) {
 }
 
 export function mapProject(row: ProjectRow, taskRows: TaskRow[]): Project {
-  const tasks: Task[] = taskRows.filter((t) => t.project_id === row.id).map((t) => ({
-    id: t.id, title: t.title, note: t.note ?? undefined, group: t.done ? "done" : t.grp, done: t.done,
-  }));
+  const tasks: Task[] = taskRows.filter((t) => t.project_id === row.id).map((t) => {
+    const status = taskStatus(t);
+    return { id: t.id, title: t.title, note: t.note ?? undefined, group: status === "done" ? "done" : t.grp, done: status === "done", status, dueDate: t.due_date, doneAt: t.done_at };
+  });
   return {
     id: row.id, name: row.name, brand: row.brand ?? "", category: row.category, status: row.status,
     pct: row.pct ?? 0, next: row.next_step ?? "", open: row.open_count ?? 0, updated: formatDate(row.updated_at),
