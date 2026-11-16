@@ -1,11 +1,14 @@
 // Single access point for authenticated browser data; never query from route loaders.
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { formatDate, getProgress, latestSync, mapProject, type ProjectRow, type TaskRow, type LogRow } from "./mapping";
+import { formatDate, getProgress, latestSync, mapProject, taskStatus, type ProjectRow, type TaskRow, type LogRow, type NoteRow } from "./mapping";
 import type { Status, Deadline, ChainStep, WaitingItem } from "./types";
+import type { TableTask, TaskStatus } from "./tasks";
 
 export { getProgress };
+export type { NoteRow };
 export const statusLabel: Record<Status, string> = { progress: "進行中", waiting: "等待中", deadline: "有時限", almost: "快完成", done: "已完成" };
 interface DeadlineRow { id: string; title: string; detail: string | null; when_label: string | null; level: Deadline["level"]; }
 interface WaitingRow { id: string; initials: string; who: string; project_label: string; what: string; }
@@ -20,13 +23,21 @@ async function readTable<T>(table: string, order = "sort", filter?: [string, boo
   return (data ?? []) as T[];
 }
 
+async function run(p: PromiseLike<{ error: { message: string } | null }>) {
+  const { error } = await p;
+  if (error) throw new Error(error.message);
+}
+
+type Table = "pcc_tasks" | "pcc_notes";
+interface Op { table: Table; apply: (rows: never[]) => unknown[]; exec: () => Promise<void>; }
+
 export function useStore() {
   const { user, ready } = useAuth();
   const client = useQueryClient();
   const key = (table: string) => ["pcc", user?.id, table];
   const enabled = ready && Boolean(user);
   const options = { enabled, staleTime: 30_000, retry: 1 };
-  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery] = useQueries({ queries: [
+  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery] = useQueries({ queries: [
     { ...options, queryKey: key("pcc_projects"), queryFn: () => readTable<ProjectRow>("pcc_projects", "sort", ["archived", false]) },
     { ...options, queryKey: key("pcc_tasks"), queryFn: () => readTable<TaskRow>("pcc_tasks") },
     { ...options, queryKey: key("pcc_deadlines"), queryFn: () => readTable<DeadlineRow>("pcc_deadlines", "sort", ["done", false]) },
@@ -34,34 +45,45 @@ export function useStore() {
     { ...options, queryKey: key("pcc_waiting"), queryFn: () => readTable<WaitingRow>("pcc_waiting", "sort", ["resolved", false]) },
     { ...options, queryKey: key("pcc_log"), queryFn: () => readTable<LogRow>("pcc_log", "created_at") },
     { ...options, queryKey: key("pcc_meta"), queryFn: () => readTable<MetaRow>("pcc_meta", "key") },
+    { ...options, queryKey: key("pcc_notes"), queryFn: () => readTable<NoteRow>("pcc_notes", "created_at") },
   ] });
-  const toggle = useMutation({
-    mutationFn: async ({ taskId, projectId, done }: { taskId: string; projectId: string; done: boolean }) => {
-      const { data, error } = await supabase.from("pcc_tasks").update({ done }).eq("id", taskId).eq("project_id", projectId).select("id").single();
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("沒有權限更新此待辦");
-    },
-    onMutate: async ({ taskId, done }) => {
-      await client.cancelQueries({ queryKey: key("pcc_tasks") });
-      const previous = client.getQueryData<TaskRow[]>(key("pcc_tasks"));
-      client.setQueryData<TaskRow[]>(key("pcc_tasks"), (rows) => rows?.map((t) => t.id === taskId ? { ...t, done } : t));
+
+  const mutation = useMutation({
+    mutationFn: (op: Op) => op.exec(),
+    onMutate: async (op) => {
+      await client.cancelQueries({ queryKey: key(op.table) });
+      const previous = client.getQueryData<unknown[]>(key(op.table));
+      client.setQueryData<unknown[]>(key(op.table), (rows) => op.apply((rows ?? []) as never[]));
       return { previous };
     },
-    onError: (_error, _variables, context) => { if (context?.previous) client.setQueryData(key("pcc_tasks"), context.previous); },
-    onSettled: () => { void client.invalidateQueries({ queryKey: key("pcc_tasks") }); void client.invalidateQueries({ queryKey: key("pcc_projects") }); },
+    onError: (error, op, context) => {
+      if (context?.previous) client.setQueryData(key(op.table), context.previous);
+      toast.error(`儲存失敗：${error.message}`);
+    },
+    onSettled: () => { ["pcc_tasks", "pcc_projects", "pcc_notes"].forEach((t) => { void client.invalidateQueries({ queryKey: key(t) }); }); },
   });
-  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery];
+  const patchTask = (taskId: string, patch: Partial<TaskRow>, remote: Record<string, unknown>) => mutation.mutate({
+    table: "pcc_tasks",
+    apply: (rows: TaskRow[]) => rows.map((t) => t.id === taskId ? { ...t, ...patch, updated_at: new Date().toISOString() } : t),
+    exec: () => run(supabase.from("pcc_tasks").update(remote).eq("id", taskId)),
+  } as Op);
+
+  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery];
   const rows = projectsQuery.data ?? [];
   const taskRows = tasksQuery.data ?? [];
+  const noteRows = notesQuery.data ?? [];
   const projects = rows.map((p) => mapProject(p, taskRows));
   const metaValue = (name: string) => { const value = metaQuery.data?.find((m) => m.key === name)?.value; return typeof value === "string" ? value : ""; };
+
+  const setTaskStatus = (taskId: string, status: TaskStatus) => {
+    const done = status === "done";
+    patchTask(taskId, { status, done, done_at: done ? new Date().toISOString() : null }, { status });
+  };
+
   return {
     loading: !enabled || queries.some((q) => q.isPending),
     error: queries.find((q) => q.error)?.error?.message ?? null,
     retry: () => { queries.forEach((q) => { void q.refetch(); }); },
-    mutationError: toggle.error?.message ?? null,
-    dismissMutationError: toggle.reset,
-    taskPending: toggle.isPending,
     getMeta: () => ({ lastSynced: latestSync(rows, taskRows), resumeProjectId: metaValue("resume_project_id"), secondaryNext: metaValue("secondary_next") }),
     getProjects: () => projects,
     getProject: (id: string) => projects.find((p) => p.id === id),
@@ -69,9 +91,44 @@ export function useStore() {
     getChain: () => chainQuery.data ?? [],
     getWaiting: (): WaitingItem[] => (waitingQuery.data ?? []).map((w) => ({ initials: w.initials, who: w.who, project: w.project_label, what: w.what })),
     getLogs: (projectId: string) => (logQuery.data ?? []).filter((l) => l.project_id === projectId).slice(0, 5).map((l) => ({ ...l, date: formatDate(l.created_at) })),
-    toggleTask: (projectId: string, taskId: string) => {
-      const task = taskRows.find((t) => t.id === taskId && t.project_id === projectId);
-      if (task && !toggle.isPending) toggle.mutate({ projectId, taskId, done: !task.done });
+    getTableTasks: (): TableTask[] => {
+      const order = new Map(rows.map((p, i) => [p.id, i]));
+      return taskRows.filter((t) => order.has(t.project_id)).map((t) => ({
+        id: t.id, projectId: t.project_id, projectName: rows[order.get(t.project_id)!]!.name, projectSort: order.get(t.project_id)!, sort: t.sort ?? 0,
+        title: t.title, note: t.note ?? undefined, status: taskStatus(t), dueDate: t.due_date, doneAt: t.done_at, updatedAt: t.updated_at,
+      }));
     },
+    getTaskStatus: (taskId: string): TaskStatus | undefined => { const t = taskRows.find((r) => r.id === taskId); return t ? taskStatus(t) : undefined; },
+    getNotes: (projectId?: string) => noteRows.filter((n) => !projectId || n.project_id === projectId).slice(0, 5),
+    unprocessedNotes: noteRows.filter((n) => !n.processed).length,
+    setTaskStatus,
+    setTaskDue: (taskId: string, due: string | null) => patchTask(taskId, { due_date: due }, { due_date: due }),
+    renameTask: (taskId: string, title: string) => { if (title.trim()) patchTask(taskId, { title: title.trim() }, { title: title.trim() }); },
+    addTask: (projectId: string, title: string) => {
+      const clean = title.trim();
+      if (!clean || !projectId) return;
+      const sort = Math.max(0, ...taskRows.filter((t) => t.project_id === projectId).map((t) => t.sort ?? 0)) + 1;
+      const row = { id: crypto.randomUUID(), project_id: projectId, title: clean, grp: "next" as const, status: "todo" as const, sort };
+      mutation.mutate({
+        table: "pcc_tasks",
+        apply: (list: TaskRow[]) => [...list, { ...row, note: null, done: false, due_date: null, done_at: null, updated_at: new Date().toISOString() }],
+        exec: () => run(supabase.from("pcc_tasks").insert(row)),
+      } as Op);
+    },
+    addNote: (projectId: string | null, body: string) => {
+      const clean = body.trim();
+      if (!clean) return;
+      const row = { id: crypto.randomUUID(), project_id: projectId, body: clean };
+      mutation.mutate({
+        table: "pcc_notes",
+        apply: (list: NoteRow[]) => [{ ...row, processed: false, reply: null, created_at: new Date().toISOString(), processed_at: null }, ...list],
+        exec: () => run(supabase.from("pcc_notes").insert(row)),
+      } as Op);
+    },
+    deleteNote: (noteId: string) => mutation.mutate({
+      table: "pcc_notes",
+      apply: (list: NoteRow[]) => list.filter((n) => n.id !== noteId),
+      exec: () => run(supabase.from("pcc_notes").delete().eq("id", noteId).eq("processed", false)),
+    } as Op),
   };
 }

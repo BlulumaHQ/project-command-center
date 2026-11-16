@@ -6,7 +6,7 @@ const p = (id: string, name: string, brand: string, category: Project["category"
 const t = (group: TaskGroup, items: (string | [string, string])[]): Task[] =>
   items.map((it, i) => {
     const [title, note] = Array.isArray(it) ? it : [it, undefined];
-    return { id: `${group}-${i + 1}`, title, note, group, done: group === "done" };
+    return { id: `${group}-${i + 1}`, title, note, group, done: group === "done", status: group === "done" ? "done" as const : "todo" as const, dueDate: null, doneAt: null };
   });
 
 const toyscope = p("toyscope", "ToyScope", "自己產品 · App", "product", "progress", 35, "設計 toyscope.app landing page（Claude Design）", 7, "11/15");

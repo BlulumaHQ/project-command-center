@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppHeader } from "../components/AppHeader";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { DataSkeleton } from "@/components/DataState";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -140,6 +141,7 @@ function AppLayout() {
   return <>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       {!loginPage && ready && user && <AppHeader />}
+      <Toaster position="bottom-center" />
       <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
         {loginPage || (ready && user) ? <Outlet /> : <DataSkeleton />}
       </main>
