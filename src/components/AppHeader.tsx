@@ -1,0 +1,59 @@
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Plus, Search } from "lucide-react";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+export function AppHeader() {
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const q = useRouterState({ select: (s) => (s.location.search as { q?: string }).q ?? "" });
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <Link to="/" search={{ q: undefined }} className="flex min-w-0 items-center gap-3">
+          {logoFailed ? (
+            <span className="text-[14px] font-bold tracking-[0.12em] text-foreground">BLULUMA DESIGN</span>
+          ) : (
+            <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="h-7 w-auto" onError={() => setLogoFailed(true)} />
+          )}
+          <span className="h-5 w-px bg-border" aria-hidden />
+          <span className="truncate text-sm font-medium text-muted-foreground">Project Command Center</span>
+        </Link>
+        <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+          <label className="relative flex-1 sm:w-72 sm:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => navigate({ to: "/", search: { q: e.target.value || undefined }, replace: true })}
+              placeholder="搜尋專案、品牌、下一步"
+              className="h-10 rounded-xl bg-card pl-9"
+              aria-label="搜尋專案"
+            />
+          </label>
+          <Button className="h-10 rounded-xl" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" /> 新專案
+          </Button>
+        </div>
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader><DialogTitle>新專案</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="專案名稱" />
+            <Input placeholder="品牌 / 類別" />
+            <Input placeholder="下一步" />
+          </div>
+          {/* TODO: wire to store.addProject() once Supabase is connected */}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>取消</Button>
+            <Button onClick={() => setOpen(false)}>建立</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </header>
+  );
+}
