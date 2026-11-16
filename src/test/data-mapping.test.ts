@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, getProgress, latestSync, mapProject, type ProjectRow, type TaskRow } from "@/data/mapping";
+import { formatDate, getProgress, latestSync, mapProject, recentProjects, relativeActivityTime, type ProjectRow, type TaskRow } from "@/data/mapping";
 
 const project: ProjectRow = {
   id: "one", name: "One", brand: "Brand", category: "client", status: "done", pct: 80,
@@ -13,8 +13,12 @@ describe("Existing dashboard data rules", () => {
     const mapped = mapProject(project, [task("a", "next", false), task("b", "later", false), task("c", "next", true), task("d", "later", true)]);
     expect(mapped.detail?.tasks.map((t) => t.group)).toEqual(["next", "later", "done", "done"]);
   });
-  it("computes percentage and open count from tasks when they exist", () => {
-    expect(getProgress(mapProject(project, [task("a", "next", false), task("b", "later", true)]))).toEqual({ done: 1, total: 2, pct: 50, open: 1 });
+  it("uses the project percentage below five tasks, with actual open count", () => {
+    expect(getProgress(mapProject(project, [task("a", "next", false), task("b", "later", true)]))).toEqual({ done: 1, total: 2, pct: 80, open: 1 });
+    expect(getProgress(mapProject(project, Array.from({ length: 4 }, (_, i) => task(String(i), "next", false)))).pct).toBe(80);
+  });
+  it("computes percentage from tasks starting at five tasks", () => {
+    expect(getProgress(mapProject(project, Array.from({ length: 5 }, (_, i) => task(String(i), "next", i < 2))))).toEqual({ done: 2, total: 5, pct: 40, open: 3 });
   });
   it("uses project percentage and count when there are no tasks", () => {
     expect(getProgress(mapProject(project, []))).toEqual({ done: 0, total: 0, pct: 80, open: 7 });
@@ -34,5 +38,20 @@ describe("Existing dashboard data rules", () => {
   });
   it("uses the latest project or task update as the sync time", () => {
     expect(latestSync([project], [task("a", "next", false)])).toBe("11/15 23:00");
+  });
+});
+describe("最近在做", () => {
+  it("orders by the maximum project, task or log timestamp and limits to three non-archived projects", () => {
+    const rows = ["project", "task", "log", "old", "archived"].map((id) => ({ ...project, id, archived: id === "archived", updated_at: id === "project" ? "2026-11-16T22:00:00Z" : "2026-11-15T00:00:00Z" }));
+    const tasks = [{ ...task("t", "next", false), project_id: "task", updated_at: "2026-11-16T21:00:00Z" }];
+    const logs = [{ id: "l", project_id: "log", summary: "Work", created_at: "2026-11-16T23:00:00Z" }, { id: "a", project_id: "archived", summary: "Work", created_at: "2026-11-17T00:00:00Z" }];
+    expect(recentProjects(rows, tasks, logs).map((p) => p.id)).toEqual(["log", "project", "task"]);
+    expect(recentProjects(rows, tasks, logs)[0]?.activityAt).toBe(Date.parse("2026-11-16T23:00:00Z"));
+  });
+  it("ignores invalid timestamps and unrelated activity", () => {
+    expect(recentProjects([{ ...project, updated_at: null }], [{ ...task("t", "next", false), updated_at: "invalid" }], [{ id: "l", project_id: "other", summary: "", created_at: "2026-11-17T00:00:00Z" }])[0]?.activityAt).toBe(0);
+  });
+  it("shows hours in Traditional Chinese", () => {
+    expect(relativeActivityTime(Date.parse("2026-11-16T20:00:00Z"), Date.parse("2026-11-16T22:00:00Z"))).toBe("2 小時前");
   });
 });

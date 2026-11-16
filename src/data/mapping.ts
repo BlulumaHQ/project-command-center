@@ -2,7 +2,7 @@ import type { Project, Task, Status, Category, Phase, LinkRow } from "./types";
 import type { TaskStatus } from "./tasks";
 
 export interface ProjectRow {
-  id: string; name: string; brand: string; category: Category; status: Status; pct: number;
+  archived?: boolean; id: string; name: string; brand: string; category: Category; status: Status; pct: number;
   next_step: string; open_count: number; description: string | null; now_title: string | null;
   now_note: string | null; handoff: string | null; decisions: string[] | null; links: LinkRow[] | null;
   phases: Phase[] | null; undecided: string | null; updated_at: string | null;
@@ -42,10 +42,28 @@ export function mapProject(row: ProjectRow, taskRows: TaskRow[]): Project {
 export function getProgress(project: Project) {
   const tasks = project.detail?.tasks ?? [];
   const done = tasks.filter((t) => t.done).length;
-  return { done, total: tasks.length, pct: tasks.length ? Math.round(done / tasks.length * 100) : project.pct, open: tasks.length ? tasks.length - done : project.open };
+  return { done, total: tasks.length, pct: tasks.length >= 5 ? Math.round(done / tasks.length * 100) : project.pct, open: tasks.length ? tasks.length - done : project.open };
 }
 
 export function latestSync(projects: ProjectRow[], tasks: TaskRow[]) {
   const timestamps = [...projects, ...tasks].map((r) => r.updated_at).filter((v): v is string => Boolean(v) && !Number.isNaN(Date.parse(v ?? "")));
   return formatDate(timestamps.sort((a, b) => Date.parse(b) - Date.parse(a))[0], true);
+}
+export function recentProjects(projects: ProjectRow[], tasks: TaskRow[], logs: LogRow[]) {
+  const timestamp = (value: string | null) => value && !Number.isNaN(Date.parse(value)) ? Date.parse(value) : 0;
+  const activity = new Map<string, number>();
+  for (const task of tasks) activity.set(task.project_id, Math.max(activity.get(task.project_id) ?? 0, timestamp(task.updated_at)));
+  for (const log of logs) activity.set(log.project_id, Math.max(activity.get(log.project_id) ?? 0, timestamp(log.created_at)));
+  return projects.filter((p) => !p.archived).map((p) => ({ id: p.id, name: p.name, next: p.next_step, activityAt: Math.max(timestamp(p.updated_at), activity.get(p.id) ?? 0) }))
+    .sort((a, b) => b.activityAt - a.activityAt).slice(0, 3);
+}
+
+export function relativeActivityTime(timestamp: number, now = Date.now()) {
+  if (!timestamp) return "—";
+  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
+  if (seconds < 60) return "剛剛";
+  const formatter = new Intl.RelativeTimeFormat("zh-TW", { numeric: "always" });
+  if (seconds < 3600) return formatter.format(-Math.floor(seconds / 60), "minute");
+  if (seconds < 86400) return formatter.format(-Math.floor(seconds / 3600), "hour");
+  return formatter.format(-Math.floor(seconds / 86400), "day");
 }

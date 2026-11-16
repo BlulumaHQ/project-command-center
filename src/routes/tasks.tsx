@@ -5,13 +5,15 @@ import { useStore } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { DuePicker, EditableTitle, StatusSelect } from "@/components/TaskControls";
-import { emptyLabel, filterCounts, filterLabel, filterTasks, vancouverDate, type TableTask, type TaskFilter, type TaskStatus } from "@/data/tasks";
+import { emptyLabel, filterCounts, filterLabel, filterTasks, matchesFilter, storedTaskFilter, vancouverDate, type TableTask, type TaskFilter, type TaskStatus } from "@/data/tasks";
 import { formatDate } from "@/data/mapping";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
   ssr: false,
   beforeLoad: requireSignedIn,
+  validateSearch: (s: Record<string, unknown>): { filter?: TaskFilter | undefined } => ({ filter: typeof s["filter"] === "string" ? storedTaskFilter(s["filter"]) : undefined }),
   head: () => ({
     meta: [
       { title: "待辦表 · Bluluma HQ" },
@@ -30,18 +32,28 @@ const ADD_KEY = "pcc.tasks.addProject";
 
 function TasksPage() {
   const store = useStore();
-  const [filter, setFilter] = useState<TaskFilter>("all");
+  const search = Route.useSearch();
+  const [pinned, setPinned] = useState<string[]>([]);
+  const [highlighted, setHighlighted] = useState<string[]>([]);
+  const [filter, setFilter] = useState<TaskFilter>("next");
   const [projectFilter, setProjectFilter] = useState("");
   const [addProject, setAddProject] = useState("");
   const [title, setTitle] = useState("");
   const addRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const f = localStorage.getItem(FILTER_KEY);
-    if (f && f in filterLabel) setFilter(f as TaskFilter);
-    setProjectFilter(localStorage.getItem(PROJECT_KEY) ?? "");
+    const f = search.filter ?? storedTaskFilter(localStorage.getItem(FILTER_KEY));
+    setFilter(f);
+    localStorage.setItem(FILTER_KEY, f);
+    setPinned([]);
+    setProjectFilter(search.filter ? "" : localStorage.getItem(PROJECT_KEY) ?? "");
     setAddProject(localStorage.getItem(ADD_KEY) ?? "");
-  }, []);
+  }, [search.filter]);
+  useEffect(() => {
+    if (!highlighted.length) return;
+    const timer = window.setTimeout(() => setHighlighted([]), 2300);
+    return () => window.clearTimeout(timer);
+  }, [highlighted]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
@@ -59,9 +71,11 @@ function TasksPage() {
   const all = store.getTableTasks();
   const counts = filterCounts(all, today, projectFilter);
   const list = filterTasks(all, filter, today, projectFilter);
+  const pinOrder = new Map(pinned.map((id, i) => [id, i]));
+  list.sort((a, b) => (pinOrder.get(a.id) ?? Infinity) - (pinOrder.get(b.id) ?? Infinity));
 
-  const pickFilter = (f: TaskFilter) => { setFilter(f); localStorage.setItem(FILTER_KEY, f); };
-  const pickProject = (id: string) => { setProjectFilter(id); localStorage.setItem(PROJECT_KEY, id); };
+  const pickFilter = (f: TaskFilter) => { setFilter(f); setPinned([]); localStorage.setItem(FILTER_KEY, f); };
+  const pickProject = (id: string) => { setProjectFilter(id); setPinned([]); localStorage.setItem(PROJECT_KEY, id); };
   const changeStatus = (t: TableTask, status: TaskStatus) => {
     const prev = t.status;
     store.setTaskStatus(t.id, status);
@@ -69,7 +83,13 @@ function TasksPage() {
   };
   const add = () => {
     if (!title.trim() || !addTarget) return;
-    store.addTask(addTarget, title);
+    if (!matchesFilter({ status: "todo", grp: "next", dueDate: null, doneAt: null } as TableTask, filter, today)) pickFilter("next");
+    if (projectFilter && projectFilter !== addTarget) pickProject("");
+    const id = store.addTask(addTarget, title);
+    if (id) {
+      setPinned((ids) => [id, ...ids]);
+      setHighlighted((ids) => [id, ...ids]);
+    }
     setTitle("");
     addRef.current?.focus();
   };
@@ -90,10 +110,10 @@ function TasksPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         {(Object.keys(filterLabel) as TaskFilter[]).map((f) => (
-          <button key={f} onClick={() => pickFilter(f)} aria-pressed={filter === f}
+          <Button variant="ghost" key={f} onClick={() => pickFilter(f)} aria-pressed={filter === f}
             className={cn("h-9 rounded-full border px-3 text-sm transition-colors", filter === f ? "border-ink bg-ink text-ink-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground")}>
             {filterLabel[f]} <span className="tabular-nums opacity-70">{counts[f]}</span>
-          </button>
+          </Button>
         ))}
         <select aria-label="專案篩選" value={projectFilter} onChange={(e) => pickProject(e.target.value)}
           className="ml-auto h-9 rounded-full border border-border bg-card px-3 text-sm">
@@ -113,7 +133,7 @@ function TasksPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {list.map((t) => (
-                  <tr key={t.id} className="h-11">
+                  <tr key={t.id} className={cn("h-11 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
                     <td className="px-4 py-2 align-top"><Link to="/project/$id" params={{ id: t.projectId }} className="text-muted-foreground hover:text-foreground hover:underline">{t.projectName}</Link></td>
                     <td className="px-4 py-2 align-top">
                       <EditableTitle title={t.title} done={t.status === "done"} onSave={(v) => store.renameTask(t.id, v)} />
@@ -129,7 +149,7 @@ function TasksPage() {
           </div>
           <ul className="space-y-2 sm:hidden">
             {list.map((t) => (
-              <li key={t.id} className="panel p-3">
+              <li key={t.id} className={cn("panel p-3 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
                 <EditableTitle title={t.title} done={t.status === "done"} onSave={(v) => store.renameTask(t.id, v)} />
                 {t.note && <div className="text-xs text-muted-foreground">{t.note}</div>}
                 <Link to="/project/$id" params={{ id: t.projectId }} className="mt-1 block text-xs text-muted-foreground">{t.projectName}</Link>

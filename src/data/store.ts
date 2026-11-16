@@ -3,7 +3,7 @@ import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { formatDate, getProgress, latestSync, mapProject, taskStatus, type ProjectRow, type TaskRow, type LogRow, type NoteRow } from "./mapping";
+import { formatDate, getProgress, latestSync, mapProject, recentProjects, taskStatus, type ProjectRow, type TaskRow, type LogRow, type NoteRow } from "./mapping";
 import type { Status, Deadline, ChainStep, WaitingItem } from "./types";
 import type { TableTask, TaskStatus } from "./tasks";
 
@@ -86,6 +86,7 @@ export function useStore() {
     retry: () => { queries.forEach((q) => { void q.refetch(); }); },
     getMeta: () => ({ lastSynced: latestSync(rows, taskRows), resumeProjectId: metaValue("resume_project_id"), secondaryNext: metaValue("secondary_next") }),
     getProjects: () => projects,
+    getRecentProjects: () => recentProjects(rows, taskRows, logQuery.data ?? []),
     getProject: (id: string) => projects.find((p) => p.id === id),
     getDeadlines: (): Deadline[] => (deadlinesQuery.data ?? []).map((d) => ({ title: d.title, detail: d.detail ?? "", when: d.when_label ?? "", level: d.level })),
     getChain: () => chainQuery.data ?? [],
@@ -93,10 +94,15 @@ export function useStore() {
     getLogs: (projectId: string) => (logQuery.data ?? []).filter((l) => l.project_id === projectId).slice(0, 5).map((l) => ({ ...l, date: formatDate(l.created_at) })),
     getTableTasks: (): TableTask[] => {
       const order = new Map(rows.map((p, i) => [p.id, i]));
-      return taskRows.filter((t) => order.has(t.project_id)).map((t) => ({
-        id: t.id, projectId: t.project_id, projectName: rows[order.get(t.project_id)!]!.name, projectSort: order.get(t.project_id)!, sort: t.sort ?? 0,
+      return taskRows.flatMap((t) => {
+        const projectSort = order.get(t.project_id);
+        const project = projectSort === undefined ? undefined : rows[projectSort];
+        if (projectSort === undefined || !project) return [];
+        return [{
+        id: t.id, projectId: t.project_id, projectName: project.name, projectSort, grp: t.grp, sort: t.sort ?? 0,
         title: t.title, note: t.note ?? undefined, status: taskStatus(t), dueDate: t.due_date, doneAt: t.done_at, updatedAt: t.updated_at,
-      }));
+        }];
+      });
     },
     getTaskStatus: (taskId: string): TaskStatus | undefined => { const t = taskRows.find((r) => r.id === taskId); return t ? taskStatus(t) : undefined; },
     getNotes: (projectId?: string) => noteRows.filter((n) => !projectId || n.project_id === projectId).slice(0, 5),
@@ -113,7 +119,8 @@ export function useStore() {
         table: "pcc_tasks",
         apply: (list: TaskRow[]) => [...list, { ...row, note: null, done: false, due_date: null, done_at: null, updated_at: new Date().toISOString() }],
         exec: () => run(supabase.from("pcc_tasks").insert(row)),
-      } as Op);
+      } as Op, { onSuccess: () => toast.success(`已加到 ${rows.find((p) => p.id === projectId)?.name ?? "專案"}`) });
+      return row.id;
     },
     addNote: (projectId: string | null, body: string) => {
       const clean = body.trim();
