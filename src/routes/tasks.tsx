@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/tasks")({
   ssr: false,
   beforeLoad: requireSignedIn,
-  validateSearch: (s: Record<string, unknown>): { filter?: TaskFilter } => ({ filter: typeof s.filter === "string" ? storedTaskFilter(s.filter) : undefined }),
+  validateSearch: (s: Record<string, unknown>): { filter?: TaskFilter | undefined } => ({ filter: typeof s["filter"] === "string" ? storedTaskFilter(s["filter"]) : undefined }),
   head: () => ({
     meta: [
       { title: "待辦表 · Bluluma HQ" },
@@ -46,12 +46,12 @@ function TasksPage() {
     setFilter(f);
     localStorage.setItem(FILTER_KEY, f);
     setPinned([]);
-    setProjectFilter(localStorage.getItem(PROJECT_KEY) ?? "");
+    setProjectFilter(search.filter ? "" : localStorage.getItem(PROJECT_KEY) ?? "");
     setAddProject(localStorage.getItem(ADD_KEY) ?? "");
   }, [search.filter]);
   useEffect(() => {
     if (!highlighted.length) return;
-    const timer = window.setTimeout(() => setHighlighted([]), 3000);
+    const timer = window.setTimeout(() => setHighlighted([]), 2300);
     return () => window.clearTimeout(timer);
   }, [highlighted]);
   useEffect(() => {
@@ -133,7 +133,7 @@ function TasksPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {list.map((t) => (
-                  <tr key={t.id} className={cn("h-11 transition-colors duration-[3000ms] motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
+                  <tr key={t.id} className={cn("h-11 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
                     <td className="px-4 py-2 align-top"><Link to="/project/$id" params={{ id: t.projectId }} className="text-muted-foreground hover:text-foreground hover:underline">{t.projectName}</Link></td>
                     <td className="px-4 py-2 align-top">
                       <EditableTitle title={t.title} done={t.status === "done"} onSave={(v) => store.renameTask(t.id, v)} />
@@ -149,7 +149,7 @@ function TasksPage() {
           </div>
           <ul className="space-y-2 sm:hidden">
             {list.map((t) => (
-              <li key={t.id} className={cn("panel p-3 transition-colors duration-[3000ms] motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
+              <li key={t.id} className={cn("panel p-3 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
                 <EditableTitle title={t.title} done={t.status === "done"} onSave={(v) => store.renameTask(t.id, v)} />
                 {t.note && <div className="text-xs text-muted-foreground">{t.note}</div>}
                 <Link to="/project/$id" params={{ id: t.projectId }} className="mt-1 block text-xs text-muted-foreground">{t.projectName}</Link>
