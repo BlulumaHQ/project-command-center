@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Plus, Search } from "lucide-react";
+import { LayoutGrid, ListChecks, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,9 @@ export function AppHeader() {
               aria-label="搜尋專案"
             />
           </label>
+          <Button asChild variant="outline" className="h-10 rounded-xl" title="待辦表">
+            <Link to="/tasks" aria-label="待辦表"><ListChecks className="h-4 w-4" /><span className="hidden sm:inline">待辦表</span></Link>
+          </Button>
           <Button asChild variant="outline" className="h-10 rounded-xl" title="工具">
             <Link to="/tools" aria-label="工具"><LayoutGrid className="h-4 w-4" /><span className="hidden sm:inline">工具</span></Link>
           </Button>

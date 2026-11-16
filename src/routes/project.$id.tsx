@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Check, ClipboardList } from "lucide-react";
+import { ArrowLeft, Check, ClipboardList, Circle, CheckCircle2 } from "lucide-react";
+import { NotesBox } from "@/components/NotesBox";
+import { DueLabel, EditableTitle, StatusSelect } from "@/components/TaskControls";
+import type { TaskStatus } from "@/data/tasks";
 import { getProgress, useStore } from "@/data/store";
 import type { Task, TaskGroup } from "@/data/types";
 import { StatusChip } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/project/$id")({
   ssr: false,
@@ -49,7 +51,6 @@ function ProjectPage() {
 
   return (
     <div className="space-y-6">
-      {store.mutationError && <div className="panel flex flex-wrap items-center gap-3 p-4" role="alert"><p className="flex-1 text-sm text-destructive">{store.mutationError}</p><Button variant="ghost" onClick={store.dismissMutationError}>關閉</Button></div>}
       <Link to="/" search={{ q: undefined }} className="inline-flex h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> 所有專案
       </Link>
@@ -97,6 +98,7 @@ function ProjectPage() {
 
       {!d ? (
         <div className="space-y-4">
+          <NotesBox store={store} projectId={p.id} />
           <div className="rounded-[18px] bg-ink p-6 text-ink-foreground sm:p-8">
             <div className="text-xs font-medium uppercase tracking-[0.12em] text-ink-muted">下一步 · Next</div>
             <h2 className="mt-2 text-2xl font-bold leading-snug">{p.next}</h2>
@@ -120,12 +122,13 @@ function ProjectPage() {
               return (
                 <section key={g} className="panel p-5">
                   <h3 className="mb-2 font-semibold">{groupLabel[g]} <span className="text-sm font-normal text-muted-foreground">· {items.filter((t) => !t.done).length} 待辦</span></h3>
-                  <ul>{items.map((t) => <TaskRow key={t.id} task={t} pending={store.taskPending} onToggle={() => store.toggleTask(p.id, t.id)} />)}</ul>
+                  <ul>{items.map((t) => <TaskRow key={t.id} task={t} onStatus={(st) => store.setTaskStatus(t.id, st)} onRename={(v) => store.renameTask(t.id, v)} />)}</ul>
                 </section>
               );
             })}
           </div>
           <aside className="space-y-4">
+            <NotesBox store={store} projectId={p.id} />
             <div className="panel p-5">
               <h3 className="font-semibold">Claude 交接備忘</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d.handoff}</p>
@@ -163,17 +166,18 @@ function ProjectPage() {
   );
 }
 
-function TaskRow({ task, pending, onToggle }: { task: Task; pending: boolean; onToggle: () => void }) {
+function TaskRow({ task, onStatus, onRename }: { task: Task; onStatus: (s: TaskStatus) => void; onRename: (t: string) => void }) {
   return (
-    <li>
-      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-2 py-2.5 hover:bg-muted">
-        <input type="checkbox" checked={task.done} disabled={pending} onChange={onToggle}
-          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-primary" />
-        <span className="min-w-0">
-          <span className={cn("text-sm", task.done && "text-muted-foreground line-through")}>{task.title}</span>
-          {task.note && <span className="block text-xs text-muted-foreground">{task.note}</span>}
-        </span>
-      </label>
+    <li className="flex min-h-11 items-start gap-3 rounded-lg px-2 py-2 hover:bg-muted">
+      <button type="button" aria-label={task.done ? "標為未開始" : "標為完成"} onClick={() => onStatus(task.done ? "todo" : "done")} className="-m-1 p-1">
+        {task.done ? <CheckCircle2 className="h-5 w-5 text-st-almost-bar" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
+      </button>
+      <span className="min-w-0 flex-1">
+        <EditableTitle title={task.title} done={task.done} onSave={onRename} />
+        {task.note && <span className="block text-xs text-muted-foreground">{task.note}</span>}
+      </span>
+      <DueLabel due={task.dueDate} />
+      <StatusSelect value={task.status} onChange={onStatus} className="h-8" />
     </li>
   );
 }

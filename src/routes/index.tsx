@@ -7,6 +7,7 @@ import { DataError, DataSkeleton } from "@/components/DataState";
 import type { Category } from "@/data/types";
 import { ProgressBar, StatusChip } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
+import { NotesBox } from "@/components/NotesBox";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -69,6 +70,8 @@ function Overview() {
           </div>
         ))}
       </div>
+      {store.unprocessedNotes > 0 && <p className="-mt-3 text-sm text-muted-foreground">{store.unprocessedNotes} 則留言等 Claude 處理</p>}
+      <NotesBox store={store} />
 
       <div className="grid gap-4 lg:grid-cols-5">
         {resume && (
