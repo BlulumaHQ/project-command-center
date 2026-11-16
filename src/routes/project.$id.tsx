@@ -1,23 +1,23 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Check, ClipboardList } from "lucide-react";
-import { getProgress, getProject, useStore } from "@/data/store";
+import { getProgress, useStore } from "@/data/store";
 import type { Task, TaskGroup } from "@/data/types";
 import { StatusChip } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
-import { toggleTask } from "@/data/store";
+import { requireSignedIn } from "@/lib/auth";
+import { DataError, DataSkeleton } from "@/components/DataState";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/project/$id")({
-  loader: ({ params }) => {
-    const p = getProject(params.id);
-    if (!p) throw notFound();
-    return { name: p.name, brand: p.brand };
-  },
-  head: ({ loaderData }) => ({
+  ssr: false,
+  beforeLoad: requireSignedIn,
+  head: ({ params }) => ({
     meta: [
-      { title: `${loaderData?.name ?? "專案"} · Project Command Center` },
-      { name: "description", content: `${loaderData?.name ?? "專案"} 的進度、待辦與交接備忘。` },
-      { property: "og:title", content: `${loaderData?.name ?? "專案"} · Project Command Center` },
-      { property: "og:description", content: `${loaderData?.name ?? "專案"} 的進度、待辦與交接備忘。` },
+      { title: `${params.id} · 專案 · Project Command Center` },
+      { name: "description", content: `${params.id} 的進度、待辦與交接備忘。` },
+      { property: "og:title", content: `${params.id} · 專案 · Project Command Center` },
+      { property: "og:description", content: `${params.id} 的進度、待辦與交接備忘。` },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ProjectPage,
@@ -33,20 +33,23 @@ function Ring({ pct, className }: { pct: number; className: string }) {
     </svg>
   );
 }
-const ringStroke = { progress: "stroke-st-progress-bar", waiting: "stroke-st-waiting-bar", deadline: "stroke-st-deadline-bar", almost: "stroke-st-almost-bar" } as const;
+const ringStroke = { progress: "stroke-st-progress-bar", waiting: "stroke-st-waiting-bar", deadline: "stroke-st-deadline-bar", almost: "stroke-st-almost-bar", done: "stroke-st-almost-bar" } as const;
 const groupLabel: Record<TaskGroup, string> = { next: "接下來", later: "之後", done: "已完成" };
 
 function ProjectPage() {
-  useStore();
+  const store = useStore();
   const { id } = Route.useParams();
-  const p = getProject(id);
-  if (!p) return null;
+  if (store.error) return <DataError message={store.error} retry={store.retry} />;
+  if (store.loading) return <DataSkeleton />;
+  const p = store.getProject(id);
+  if (!p) return <div className="panel p-6">找不到此專案。</div>;
   const pr = getProgress(p);
   const d = p.detail;
   const phaseIdx = d ? d.phases.findIndex((x) => x.state === "now") : -1;
 
   return (
     <div className="space-y-6">
+      {store.mutationError && <div className="panel flex flex-wrap items-center gap-3 p-4" role="alert"><p className="flex-1 text-sm text-destructive">{store.mutationError}</p><Button variant="ghost" onClick={store.dismissMutationError}>關閉</Button></div>}
       <Link to="/" search={{ q: undefined }} className="inline-flex h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> 所有專案
       </Link>
@@ -117,7 +120,7 @@ function ProjectPage() {
               return (
                 <section key={g} className="panel p-5">
                   <h3 className="mb-2 font-semibold">{groupLabel[g]} <span className="text-sm font-normal text-muted-foreground">· {items.filter((t) => !t.done).length} 待辦</span></h3>
-                  <ul>{items.map((t) => <TaskRow key={t.id} projectId={p.id} task={t} />)}</ul>
+                  <ul>{items.map((t) => <TaskRow key={t.id} task={t} pending={store.taskPending} onToggle={() => store.toggleTask(p.id, t.id)} />)}</ul>
                 </section>
               );
             })}
@@ -126,6 +129,10 @@ function ProjectPage() {
             <div className="panel p-5">
               <h3 className="font-semibold">Claude 交接備忘</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d.handoff}</p>
+            </div>
+            <div className="panel p-5">
+              <h3 className="font-semibold">最近紀錄</h3>
+              {store.getLogs(p.id).length === 0 ? <p className="mt-2 text-sm text-muted-foreground">尚無紀錄</p> : <ul className="mt-3 divide-y divide-border">{store.getLogs(p.id).map((log) => <li key={log.id} className="py-2"><time dateTime={log.created_at} className="text-xs text-muted-foreground">{log.date}</time><p className="mt-1 text-sm leading-relaxed">{log.summary}</p></li>)}</ul>}
             </div>
             <div className="panel p-5">
               <h3 className="font-semibold">已經決定的事</h3>
@@ -156,11 +163,11 @@ function ProjectPage() {
   );
 }
 
-function TaskRow({ projectId, task }: { projectId: string; task: Task }) {
+function TaskRow({ task, pending, onToggle }: { task: Task; pending: boolean; onToggle: () => void }) {
   return (
     <li>
       <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-2 py-2.5 hover:bg-muted">
-        <input type="checkbox" checked={task.done} onChange={() => toggleTask(projectId, task.id)}
+        <input type="checkbox" checked={task.done} disabled={pending} onChange={onToggle}
           className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-primary" />
         <span className="min-w-0">
           <span className={cn("text-sm", task.done && "text-muted-foreground line-through")}>{task.title}</span>

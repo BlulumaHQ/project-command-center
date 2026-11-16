@@ -4,11 +4,26 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
 
 export function AppHeader() {
   const [logoFailed, setLogoFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
+  async function signOut() {
+    setSigningOut(true); setSignOutError("");
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    const { error } = await supabase.auth.signOut();
+    if (error) { setSignOutError(error.message); setSigningOut(false); return; }
+    await navigate({ to: "/login", replace: true });
+  }
   const q = useRouterState({ select: (s) => (s.location.search as { q?: string }).q ?? "" });
 
   return (
@@ -37,7 +52,9 @@ export function AppHeader() {
           <Button className="h-10 rounded-xl" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4" /> 新專案
           </Button>
+          {user && <Button variant="ghost" size="sm" disabled={signingOut} onClick={signOut}>登出</Button>}
         </div>
+        {signOutError && <p role="alert" className="w-full text-sm text-destructive">{signOutError}</p>}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="rounded-2xl">

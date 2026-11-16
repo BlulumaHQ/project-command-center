@@ -7,12 +7,15 @@ import {
   HeadContent,
   Scripts,
   type ErrorComponentProps,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppHeader } from "../components/AppHeader";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { DataSkeleton } from "@/components/DataState";
 
 function NotFoundComponent() {
   return (
@@ -126,15 +129,23 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthProvider><AppLayout /></AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+function AppLayout() {
+  const loginPage = useRouterState({ select: (s) => s.location.pathname === "/login" });
+  const { user, ready } = useAuth();
+  return <>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <AppHeader />
+      {!loginPage && ready && user && <AppHeader />}
       <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-        <Outlet />
+        {loginPage || (ready && user) ? <Outlet /> : <DataSkeleton />}
       </main>
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} Bluluma Design. Website by{" "}
         <a href="https://bluluma.com" className="underline-offset-2 hover:underline">Bluluma Design</a>
       </footer>
-    </QueryClientProvider>
-  );
+    </>;
 }

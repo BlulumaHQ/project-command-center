@@ -1,5 +1,5 @@
 export type Category = "client" | "product" | "system";
-export type Status = "progress" | "waiting" | "deadline" | "almost";
+export type Status = "progress" | "waiting" | "deadline" | "almost" | "done";
 export type StepState = "done" | "now" | "locked";
 export type TaskGroup = "next" | "later" | "done";
 

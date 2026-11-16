@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check, Lock } from "lucide-react";
 import { useState } from "react";
-import { getChain, getDeadlines, getMeta, getProgress, getProject, getProjects, getWaiting, useStore } from "@/data/store";
+import { getProgress, useStore } from "@/data/store";
+import { requireSignedIn } from "@/lib/auth";
+import { DataError, DataSkeleton } from "@/components/DataState";
 import type { Category } from "@/data/types";
 import { ProgressBar, StatusChip } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
+  beforeLoad: requireSignedIn,
   validateSearch: (s: Record<string, unknown>): { q?: string | undefined } => ({ q: typeof s["q"] === "string" && s["q"] ? s["q"] : undefined }),
   head: () => ({
     meta: [
@@ -14,6 +18,7 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "所有進行中專案、下一步、期限與等待回覆一覽。" },
       { property: "og:title", content: "專案總控台 · Project Command Center" },
       { property: "og:description", content: "所有進行中專案、下一步、期限與等待回覆一覽。" },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Overview,
@@ -25,9 +30,12 @@ const tabs: { id: Tab; label: string }[] = [
 ];
 
 function Overview() {
-  useStore();
+  const store = useStore();
+  const { getMeta, getProjects, getProject, getWaiting, getDeadlines, getChain } = store;
   const { q } = Route.useSearch();
   const [tab, setTab] = useState<Tab>("all");
+  if (store.error) return <DataError message={store.error} retry={store.retry} />;
+  if (store.loading) return <DataSkeleton />;
   const meta = getMeta();
   const projects = getProjects();
   const resume = getProject(meta.resumeProjectId);
