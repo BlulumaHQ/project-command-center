@@ -31,3 +31,5 @@ use the editor.
 
 - Keep authenticated dashboard data in the browser-only Query hooks in the data store; external RLS enforces access and no server loader should query this client.
 - Use client-only route guards and a single root auth subscriber for the external Auth session; clear private Query caches on sign-out.
+
+- Keep task-view grouping and recent-activity ranking in browser-safe data helpers; the shared store exposes results so views and tests use identical rules.

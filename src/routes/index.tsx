@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Check, Lock } from "lucide-react";
 import { useState } from "react";
 import { getProgress, useStore } from "@/data/store";
@@ -7,6 +7,8 @@ import { DataError, DataSkeleton } from "@/components/DataState";
 import type { Category } from "@/data/types";
 import { ProgressBar, StatusChip } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { relativeActivityTime } from "@/data/mapping";
 import { NotesBox } from "@/components/NotesBox";
 
 export const Route = createFileRoute("/")({
@@ -32,27 +34,31 @@ const tabs: { id: Tab; label: string }[] = [
 
 function Overview() {
   const store = useStore();
-  const { getMeta, getProjects, getProject, getWaiting, getDeadlines, getChain } = store;
+  const { getMeta, getProjects, getRecentProjects, getWaiting, getDeadlines, getChain } = store;
   const { q } = Route.useSearch();
+  const navigate = useNavigate();
+  const [almostOnly, setAlmostOnly] = useState(false);
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   const [tab, setTab] = useState<Tab>("all");
   if (store.error) return <DataError message={store.error} retry={store.retry} />;
   if (store.loading) return <DataSkeleton />;
   const meta = getMeta();
   const projects = getProjects();
-  const resume = getProject(meta.resumeProjectId);
+  const recent = getRecentProjects();
   const waiting = getWaiting();
   const query = (q ?? "").toLowerCase();
 
   const filtered = projects.filter((p) => {
+    if (almostOnly && getProgress(p).pct < 90) return false;
     if (tab === "automation" ? !/n8n|自動化/i.test(p.name + p.brand) : tab !== "all" && p.category !== tab) return false;
     return !query || [p.name, p.brand, p.next].some((s) => s.toLowerCase().includes(query));
   });
 
   const stats = [
-    { label: "進行中專案", value: projects.length, tone: "text-foreground" },
-    { label: "有時限", value: projects.filter((p) => p.status === "deadline").length, tone: "text-st-deadline-bar" },
-    { label: "等別人回覆", value: waiting.length, tone: "text-foreground" },
-    { label: "快完成 ≥ 90%", value: projects.filter((p) => getProgress(p).pct >= 90).length, tone: "text-st-almost-bar" },
+    { label: "進行中專案", value: projects.length, action: () => scrollTo("all-projects"), tone: "text-foreground" },
+    { label: "有時限", value: projects.filter((p) => p.status === "deadline").length, action: () => { void navigate({ to: "/tasks", search: { filter: "due" } }); }, tone: "text-st-deadline-bar" },
+    { label: "等別人回覆", value: waiting.length, action: () => scrollTo("waiting-list"), tone: "text-foreground" },
+    { label: "快完成 ≥ 90%", value: projects.filter((p) => getProgress(p).pct >= 90).length, action: () => { setAlmostOnly(true); setTab("all"); scrollTo("all-projects"); }, tone: "text-st-almost-bar" },
   ];
 
   return (
@@ -64,30 +70,31 @@ function Overview() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="panel p-5">
+          <Button key={s.label} variant="ghost" onClick={s.action} className="panel block h-auto cursor-pointer p-5 text-left transition-colors hover:border-primary/50 hover:bg-accent">
             <div className="text-sm text-muted-foreground">{s.label}</div>
             <div className={cn("mt-2 text-3xl font-bold tabular-nums", s.tone)}>{s.value}</div>
-          </div>
+          </Button>
         ))}
       </div>
       {store.unprocessedNotes > 0 && <p className="-mt-3 text-sm text-muted-foreground">{store.unprocessedNotes} 則留言等 Claude 處理</p>}
       <NotesBox store={store} />
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        {resume && (
-          <div className="flex flex-col rounded-[18px] bg-ink p-6 text-ink-foreground sm:p-8 lg:col-span-3">
-            <div className="text-xs font-medium uppercase tracking-[0.12em] text-ink-muted">從這裡繼續 · Resume</div>
-            <div className="mt-3 text-sm text-ink-muted">{resume.name} · {resume.brand}</div>
-            <h2 className="mt-2 text-2xl font-bold leading-snug sm:text-3xl">{resume.detail?.now.title ?? resume.next}</h2>
-            {resume.detail && <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-muted">{resume.detail.now.note}</p>}
-            <div className="mt-auto flex flex-wrap items-center gap-4 pt-6">
-              <Link to="/project/$id" params={{ id: resume.id }} className="inline-flex h-11 items-center gap-2 rounded-xl bg-ink-foreground px-5 text-sm font-semibold text-ink">
-                打開專案 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <span className="text-sm text-ink-muted">之後：{meta.secondaryNext}</span>
-            </div>
-          </div>
-        )}
+      <div className="grid items-start gap-4 lg:grid-cols-5">
+        <div className="rounded-[18px] bg-ink p-6 text-ink-foreground lg:col-span-3">
+          <h2 className="font-semibold">最近在做</h2>
+          <ul className="mt-3 divide-y divide-ink-muted/20">
+            {recent.map((p) => (
+              <li key={p.id}>
+                <Link to="/project/$id" params={{ id: p.id }} className="flex min-w-0 items-center gap-3 rounded-lg py-3 transition-colors hover:bg-ink-muted/10">
+                  <span className="min-w-0 flex-1 truncate text-sm"><span className="font-medium">{p.name}</span><span className="text-ink-muted"> · {p.next}</span></span>
+                  <span className="shrink-0 text-xs text-ink-muted">{relativeActivityTime(p.activityAt)}</span>
+                  <span className="shrink-0 text-xs">打開 →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link to="/tasks" className="mt-3 inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink-foreground">看全部待辦 <ArrowRight className="h-3.5 w-3.5" /></Link>
+        </div>
         <div className="panel p-6 lg:col-span-2">
           <h3 className="font-semibold">有時限，要注意</h3>
           <ul className="mt-4 divide-y divide-border">
@@ -127,7 +134,7 @@ function Overview() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="lg:col-span-2">
+        <section id="all-projects" className="scroll-mt-24 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="font-semibold">所有專案</h3>
             <div className="flex overflow-x-auto rounded-xl border border-border bg-card p-1" role="tablist">
@@ -139,6 +146,7 @@ function Overview() {
               ))}
             </div>
           </div>
+          {almostOnly && <Button variant="outline" onClick={() => setAlmostOnly(false)} className="mt-3 h-8 rounded-full px-3 text-xs">只看快完成 ×</Button>}
           {filtered.length === 0 ? (
             <div className="panel mt-4 p-10 text-center text-sm text-muted-foreground">沒有符合的專案</div>
           ) : (
@@ -167,7 +175,7 @@ function Overview() {
             </div>
           )}
         </section>
-        <aside>
+        <aside id="waiting-list" className="scroll-mt-24">
           <h3 className="font-semibold">等別人 · Waiting on</h3>
           <ul className="panel mt-4 divide-y divide-border">
             {waiting.map((w) => (
