@@ -131,6 +131,10 @@ function RootComponent() {
       <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
         <Outlet />
       </main>
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Bluluma Design. Website by{" "}
+        <a href="https://bluluma.com" className="underline-offset-2 hover:underline">Bluluma Design</a>
+      </footer>
     </QueryClientProvider>
   );
 }
