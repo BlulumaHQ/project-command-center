@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { LayoutGrid, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export function AppHeader() {
             <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="h-7 w-auto" onError={() => setLogoFailed(true)} />
           )}
           <span className="h-5 w-px bg-border" aria-hidden />
-          <span className="truncate text-sm font-medium text-muted-foreground">Project Command Center</span>
+          <span className="truncate text-sm font-medium text-muted-foreground">Bluluma HQ</span>
         </Link>
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <label className="relative flex-1 sm:w-72 sm:flex-none">
@@ -49,6 +49,9 @@ export function AppHeader() {
               aria-label="搜尋專案"
             />
           </label>
+          <Button asChild variant="outline" className="h-10 rounded-xl" title="工具">
+            <Link to="/tools" aria-label="工具"><LayoutGrid className="h-4 w-4" /><span className="hidden sm:inline">工具</span></Link>
+          </Button>
           <Button className="h-10 rounded-xl" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4" /> 新專案
           </Button>

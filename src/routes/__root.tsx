@@ -85,10 +85,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Project Command Center · Bluluma Design" },
+      { title: "Bluluma HQ · Bluluma Design" },
       { name: "description", content: "Sony 的私人專案總控台" },
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "Project Command Center" },
+      { property: "og:title", content: "Bluluma HQ" },
       { property: "og:description", content: "Sony 的私人專案總控台" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/login")({
   ssr: false,
   head: () => ({ meta: [
-    { title: "登入 · Project Command Center" },
+    { title: "登入 · Bluluma HQ" },
     { name: "description", content: "登入 Sony 的私人專案總控台。" },
-    { property: "og:title", content: "登入 · Project Command Center" },
+    { property: "og:title", content: "登入 · Bluluma HQ" },
     { property: "og:description", content: "登入 Sony 的私人專案總控台。" },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }),
@@ -39,7 +39,7 @@ function Login() {
   }
   return <div className="mx-auto flex min-h-[65vh] max-w-sm flex-col justify-center py-12">
     {logoFailed ? <span className="font-bold">BLULUMA DESIGN</span> : <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="mb-8 h-8 w-auto self-start" onError={() => setLogoFailed(true)} />}
-    <h1 className="text-2xl font-bold">Project Command Center</h1>
+    <h1 className="text-2xl font-bold">Bluluma HQ</h1>
     <form onSubmit={submit} className="mt-8 space-y-5">
       <label className="block space-y-2 text-sm font-medium"><span>Email</span><Input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
       <label className="block space-y-2 text-sm font-medium"><span>密碼</span><Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></label>

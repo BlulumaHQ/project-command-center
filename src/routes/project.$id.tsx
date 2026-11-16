@@ -13,9 +13,9 @@ export const Route = createFileRoute("/project/$id")({
   beforeLoad: requireSignedIn,
   head: ({ params }) => ({
     meta: [
-      { title: `${params.id} · 專案 · Project Command Center` },
+      { title: `${params.id} · 專案 · Bluluma HQ` },
       { name: "description", content: `${params.id} 的進度、待辦與交接備忘。` },
-      { property: "og:title", content: `${params.id} · 專案 · Project Command Center` },
+      { property: "og:title", content: `${params.id} · 專案 · Bluluma HQ` },
       { property: "og:description", content: `${params.id} 的進度、待辦與交接備忘。` },
       { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
