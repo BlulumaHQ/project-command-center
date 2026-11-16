@@ -1,0 +1,3 @@
+- [ ] Update task filters, stored preference migration, and quick-add visibility/feedback.
+- [ ] Replace resume card and connect overview shortcuts.
+- [ ] Update progress threshold and recent activity ordering, then run focused tests.
