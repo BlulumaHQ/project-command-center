@@ -6,6 +6,7 @@ import { useStore, type AgentRow, type AgentStatus } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { RobotAvatar } from "@/components/RobotAvatar";
+import { AgentOffice } from "@/components/AgentOffice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,7 +91,7 @@ function AgentCard({ agent, lastRun, runs, onFix, manager = false }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <article className={cn("panel flex flex-col p-4 sm:p-5", manager && "border-primary/40")}>
+    <article id={`agent-${agent.id}`} className={cn("panel flex scroll-mt-24 flex-col p-4 sm:p-5", manager && "border-primary/40")}>
       <div className="flex items-start gap-3">
         <RobotAvatar id={agent.avatar} size={manager ? 72 : 60} className="shrink-0" />
         <div className="min-w-0 flex-1">
@@ -141,6 +142,7 @@ function TeamPage() {
         <h1 className="text-2xl font-bold tracking-tight">AI 團隊</h1>
         <p className="mt-1 text-sm text-muted-foreground">{agents.length} 位員工 · {counts.ok} 位正常{counts.attention > 0 && ` · ${counts.attention} 位要看一下`}</p>
       </div>
+      <AgentOffice agents={agents} lastRunOf={lastRun} />
       {manager && <AgentCard manager agent={manager} lastRun={lastRun(manager)} runs={runsFor(manager.id)} onFix={() => setFixing(manager)} />}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {crew.map((a) => <AgentCard key={a.id} agent={a} lastRun={lastRun(a)} runs={runsFor(a.id)} onFix={() => setFixing(a)} />)}

@@ -164,3 +164,8 @@ export function RobotAvatar({ id, size = 64, className }: { id: string; size?: n
     </svg>
   );
 }
+
+/** Raw head artwork (centred on 0,0, roughly ±50 units) for use inside other SVG scenes. */
+export function robotArt(id: string): ReactNode {
+  return (robots[id] ?? fallback).art;
+}
