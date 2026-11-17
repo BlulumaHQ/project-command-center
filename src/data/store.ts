@@ -90,8 +90,9 @@ export function useStore() {
   };
 
   return {
-    loading: !enabled || queries.some((q) => q.isPending),
-    error: queries.find((q) => q.error)?.error?.message ?? null,
+    // Only the core project data blocks the page; agent / learning tables degrade to empty lists.
+    loading: !enabled || queries.slice(0, 8).some((q) => q.isPending),
+    error: queries.slice(0, 8).find((q) => q.error)?.error?.message ?? null,
     retry: () => { queries.forEach((q) => { void q.refetch(); }); },
     getMeta: () => ({ lastSynced: latestSync(rows, taskRows), resumeProjectId: metaValue("resume_project_id"), secondaryNext: metaValue("secondary_next") }),
     getProjects: () => projects,
