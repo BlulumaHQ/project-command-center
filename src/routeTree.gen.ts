@@ -10,8 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LogRouteImport } from './routes/log'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as ProjectIdRouteImport } from './routes/project.$id'
 
@@ -20,14 +23,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogRoute = LogRouteImport.update({
+  id: '/log',
+  path: '/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ToolsRoute = ToolsRouteImport.update({
@@ -43,38 +61,75 @@ const ProjectIdRoute = ProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
+  '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
   '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
+  '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
   '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
+  '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
   '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/tasks' | '/tools' | '/project/$id'
+  fullPaths:
+    | '/'
+    | '/log'
+    | '/login'
+    | '/projects'
+    | '/tasks'
+    | '/team'
+    | '/tools'
+    | '/project/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/tasks' | '/tools' | '/project/$id'
-  id: '__root__' | '/' | '/login' | '/tasks' | '/tools' | '/project/$id'
+  to:
+    | '/'
+    | '/log'
+    | '/login'
+    | '/projects'
+    | '/tasks'
+    | '/team'
+    | '/tools'
+    | '/project/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/log'
+    | '/login'
+    | '/projects'
+    | '/tasks'
+    | '/team'
+    | '/tools'
+    | '/project/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LogRoute: typeof LogRoute
   LoginRoute: typeof LoginRoute
+  ProjectsRoute: typeof ProjectsRoute
   TasksRoute: typeof TasksRoute
+  TeamRoute: typeof TeamRoute
   ToolsRoute: typeof ToolsRoute
   ProjectIdRoute: typeof ProjectIdRoute
 }
@@ -88,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/log': {
+      id: '/log'
+      path: '/log'
+      fullPath: '/log'
+      preLoaderRoute: typeof LogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -95,11 +157,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tasks': {
       id: '/tasks'
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tools': {
@@ -121,8 +197,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LogRoute: LogRoute,
   LoginRoute: LoginRoute,
+  ProjectsRoute: ProjectsRoute,
   TasksRoute: TasksRoute,
+  TeamRoute: TeamRoute,
   ToolsRoute: ToolsRoute,
   ProjectIdRoute: ProjectIdRoute,
 }

@@ -25,7 +25,7 @@ function Login() {
   const [logoFailed, setLogoFailed] = useState(false);
   const { user, ready } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (ready && user) void navigate({ to: "/", search: { q: undefined }, replace: true }); }, [ready, user, navigate]);
+  useEffect(() => { if (ready && user) void navigate({ to: "/", replace: true }); }, [ready, user, navigate]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true); setError("");
@@ -33,7 +33,7 @@ function Login() {
       const { error: failure } = await supabase.auth.signInWithPassword({ email, password });
       if (failure) throw failure;
       setPassword("");
-      await navigate({ to: "/", search: { q: undefined }, replace: true });
+      await navigate({ to: "/", replace: true });
     } catch (failure) { setError(failure instanceof Error ? failure.message : "登入失敗，請再試一次。"); }
     finally { setPending(false); }
   }

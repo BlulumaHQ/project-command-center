@@ -9,6 +9,7 @@ import { emptyLabel, filterCounts, filterLabel, filterTasks, matchesFilter, stor
 import { formatDate } from "@/data/mapping";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ViewSwitch } from "@/components/ViewSwitch";
 
 export const Route = createFileRoute("/tasks")({
   ssr: false,
@@ -96,7 +97,10 @@ function TasksPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">待辦表</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">待辦表</h1>
+        <ViewSwitch current="tasks" />
+      </div>
 
       <div className="panel flex flex-col gap-2 p-3 sm:flex-row">
         <select aria-label="新增到專案" value={addTarget} onChange={(e) => { setAddProject(e.target.value); localStorage.setItem(ADD_KEY, e.target.value); }}

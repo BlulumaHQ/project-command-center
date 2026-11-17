@@ -13,6 +13,10 @@ export const statusLabel: Record<Status, string> = { progress: "進行中", wait
 interface DeadlineRow { id: string; title: string; detail: string | null; when_label: string | null; level: Deadline["level"]; }
 interface WaitingRow { id: string; initials: string; who: string; project_label: string; what: string; }
 interface MetaRow { key: string; value: unknown; }
+export type AgentStatus = "ok" | "check" | "broken" | "idle";
+export interface AgentRow { id: string; name: string; name_zh: string; role: string; skill: string | null; trigger_hint: string | null; avatar: string; is_manager: boolean; status: AgentStatus; status_note: string | null; last_run_at: string | null; sort: number; }
+export interface AgentRunRow { id: string; agent_id: string; project_id: string | null; summary: string; outcome: "ok" | "check" | "broken"; created_at: string; }
+export interface FocusItem { title: string; project_id?: string; task_id?: string; why?: string; }
 
 async function readTable<T>(table: string, order = "sort", filter?: [string, boolean]): Promise<T[]> {
   if (typeof window === "undefined") throw new Error("資料僅在登入後於瀏覽器讀取");
@@ -37,7 +41,7 @@ export function useStore() {
   const key = (table: string) => ["pcc", user?.id, table];
   const enabled = ready && Boolean(user);
   const options = { enabled, staleTime: 30_000, retry: 1 };
-  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery] = useQueries({ queries: [
+  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery] = useQueries({ queries: [
     { ...options, queryKey: key("pcc_projects"), queryFn: () => readTable<ProjectRow>("pcc_projects", "sort", ["archived", false]) },
     { ...options, queryKey: key("pcc_tasks"), queryFn: () => readTable<TaskRow>("pcc_tasks") },
     { ...options, queryKey: key("pcc_deadlines"), queryFn: () => readTable<DeadlineRow>("pcc_deadlines", "sort", ["done", false]) },
@@ -46,6 +50,8 @@ export function useStore() {
     { ...options, queryKey: key("pcc_log"), queryFn: () => readTable<LogRow>("pcc_log", "created_at") },
     { ...options, queryKey: key("pcc_meta"), queryFn: () => readTable<MetaRow>("pcc_meta", "key") },
     { ...options, queryKey: key("pcc_notes"), queryFn: () => readTable<NoteRow>("pcc_notes", "created_at") },
+    { ...options, queryKey: key("pcc_agents"), queryFn: () => readTable<AgentRow>("pcc_agents") },
+    { ...options, queryKey: key("pcc_agent_runs"), queryFn: () => readTable<AgentRunRow>("pcc_agent_runs", "created_at") },
   ] });
 
   const mutation = useMutation({
@@ -68,7 +74,7 @@ export function useStore() {
     exec: () => run(supabase.from("pcc_tasks").update(remote).eq("id", taskId)),
   } as Op);
 
-  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery];
+  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery];
   const rows = projectsQuery.data ?? [];
   const taskRows = tasksQuery.data ?? [];
   const noteRows = notesQuery.data ?? [];
@@ -91,6 +97,19 @@ export function useStore() {
     getDeadlines: (): Deadline[] => (deadlinesQuery.data ?? []).map((d) => ({ title: d.title, detail: d.detail ?? "", when: d.when_label ?? "", level: d.level })),
     getChain: () => chainQuery.data ?? [],
     getWaiting: (): WaitingItem[] => (waitingQuery.data ?? []).map((w) => ({ initials: w.initials, who: w.who, project: w.project_label, what: w.what })),
+    getAgents: () => agentsQuery.data ?? [],
+    setAgentStatus: async (agentId: string, status: AgentStatus, note: string | null = null) => {
+      client.setQueryData<AgentRow[]>(key("pcc_agents"), (list) => (list ?? []).map((a) => a.id === agentId ? { ...a, status, status_note: note } : a));
+      const { error } = await supabase.from("pcc_agents").update({ status, status_note: note, updated_at: new Date().toISOString() }).eq("id", agentId);
+      if (error) toast.error(`儲存失敗：${error.message}`);
+      void client.invalidateQueries({ queryKey: key("pcc_agents") });
+    },
+    getAgentRuns: (agentId?: string) => (runsQuery.data ?? []).filter((r) => !agentId || r.agent_id === agentId),
+    getAllLogs: () => logQuery.data ?? [],
+    getFocus: (): FocusItem[] => {
+      const value = metaQuery.data?.find((m) => m.key === "today_focus")?.value;
+      return Array.isArray(value) ? (value as FocusItem[]).filter((f) => f && typeof f.title === "string").slice(0, 3) : [];
+    },
     getLogs: (projectId: string) => (logQuery.data ?? []).filter((l) => l.project_id === projectId).slice(0, 5).map((l) => ({ ...l, date: formatDate(l.created_at) })),
     getTableTasks: (): TableTask[] => {
       const order = new Map(rows.map((p, i) => [p.id, i]));

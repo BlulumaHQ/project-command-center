@@ -13,7 +13,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader, MobileTabBar } from "../components/AppHeader";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { DataSkeleton } from "@/components/DataState";
 import { Toaster } from "@/components/ui/sonner";
@@ -85,7 +85,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // twitter:image here: every page without its own would inherit the root's preview image.
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#f5f4f0" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Bluluma HQ" },
       { title: "Bluluma HQ · Bluluma Design" },
       { name: "description", content: "Sony 的私人專案總控台" },
       { name: "robots", content: "noindex, nofollow" },
@@ -138,16 +141,18 @@ function RootComponent() {
 function AppLayout() {
   const loginPage = useRouterState({ select: (s) => s.location.pathname === "/login" });
   const { user, ready } = useAuth();
+  const signedIn = !loginPage && ready && Boolean(user);
   return <>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {!loginPage && ready && user && <AppHeader />}
-      <Toaster position="bottom-center" />
-      <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+      {signedIn && <AppHeader />}
+      <Toaster position="top-center" />
+      <main className={signedIn ? "mx-auto max-w-7xl px-4 pb-28 pt-5 sm:px-6 md:pb-16 md:pt-6 lg:px-8" : "mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8"}>
         {loginPage || (ready && user) ? <Outlet /> : <DataSkeleton />}
       </main>
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+      <footer className={signedIn ? "hidden border-t border-border py-6 text-center text-xs text-muted-foreground md:block" : "border-t border-border py-6 text-center text-xs text-muted-foreground"}>
         © {new Date().getFullYear()} Bluluma Design. Website by{" "}
         <a href="https://bluluma.com" className="underline-offset-2 hover:underline">Bluluma Design</a>
       </footer>
+      {signedIn && <MobileTabBar />}
     </>;
 }

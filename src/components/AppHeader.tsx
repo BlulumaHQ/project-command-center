@@ -1,82 +1,84 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, ListChecks, Plus, Search } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Bot, FolderKanban, History, LayoutGrid, LogOut, Sun } from "lucide-react";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+
+export const NAV = [
+  { to: "/", label: "今天", icon: Sun, exact: true },
+  { to: "/projects", label: "專案", icon: FolderKanban, exact: false },
+  { to: "/team", label: "AI 團隊", icon: Bot, exact: false },
+  { to: "/tools", label: "工具", icon: LayoutGrid, exact: false },
+  { to: "/log", label: "紀錄", icon: History, exact: false },
+] as const;
+
+function useSignOut() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  return {
+    busy,
+    signOut: async () => {
+      setBusy(true);
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      const { error } = await supabase.auth.signOut();
+      setBusy(false);
+      if (!error) await navigate({ to: "/login", replace: true });
+    },
+  };
+}
 
 export function AppHeader() {
   const [logoFailed, setLogoFailed] = useState(false);
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const [signingOut, setSigningOut] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
-  async function signOut() {
-    setSigningOut(true); setSignOutError("");
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    const { error } = await supabase.auth.signOut();
-    if (error) { setSignOutError(error.message); setSigningOut(false); return; }
-    await navigate({ to: "/login", replace: true });
-  }
-  const q = useRouterState({ select: (s) => (s.location.search as { q?: string }).q ?? "" });
-
+  const { busy, signOut } = useSignOut();
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <Link to="/" search={{ q: undefined }} className="flex min-w-0 items-center gap-3">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <Link to="/" className="flex min-w-0 items-center gap-3">
           {logoFailed ? (
-            <span className="text-[14px] font-bold tracking-[0.12em] text-foreground">BLULUMA DESIGN</span>
+            <span className="text-[13px] font-bold tracking-[0.12em] text-foreground">BLULUMA</span>
           ) : (
-            <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="h-7 w-auto" onError={() => setLogoFailed(true)} />
+            <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="h-6 w-auto" onError={() => setLogoFailed(true)} />
           )}
           <span className="h-5 w-px bg-border" aria-hidden />
-          <span className="truncate text-sm font-medium text-muted-foreground">Bluluma HQ</span>
+          <span className="truncate text-sm font-medium text-muted-foreground">HQ</span>
         </Link>
-        <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
-          <label className="relative flex-1 sm:w-72 sm:flex-none">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => navigate({ to: "/", search: { q: e.target.value || undefined }, replace: true })}
-              placeholder="搜尋專案、品牌、下一步"
-              className="h-10 rounded-xl bg-card pl-9"
-              aria-label="搜尋專案"
-            />
-          </label>
-          <Button asChild variant="outline" className="h-10 rounded-xl" title="待辦表">
-            <Link to="/tasks" aria-label="待辦表"><ListChecks className="h-4 w-4" /><span className="hidden sm:inline">待辦表</span></Link>
-          </Button>
-          <Button asChild variant="outline" className="h-10 rounded-xl" title="工具">
-            <Link to="/tools" aria-label="工具"><LayoutGrid className="h-4 w-4" /><span className="hidden sm:inline">工具</span></Link>
-          </Button>
-          <Button className="h-10 rounded-xl" onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" /> 新專案
-          </Button>
-          {user && <Button variant="ghost" size="sm" disabled={signingOut} onClick={signOut}>登出</Button>}
-        </div>
-        {signOutError && <p role="alert" className="w-full text-sm text-destructive">{signOutError}</p>}
+        <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="主選單">
+          {NAV.map((n) => (
+            <Link key={n.to} to={n.to} activeOptions={{ exact: n.exact }}
+              className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              activeProps={{ className: "bg-ink !text-ink-foreground hover:bg-ink" }}>
+              <n.icon className="h-4 w-4" />{n.label}
+            </Link>
+          ))}
+        </nav>
+        <Button variant="ghost" size="sm" className="ml-auto" disabled={busy} onClick={signOut} aria-label="登出">
+          <LogOut className="h-4 w-4" /><span className="hidden sm:inline">登出</span>
+        </Button>
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader><DialogTitle>新專案</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="專案名稱" />
-            <Input placeholder="品牌 / 類別" />
-            <Input placeholder="下一步" />
-          </div>
-          {/* TODO: wire to store.addProject() once Supabase is connected */}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>取消</Button>
-            <Button onClick={() => setOpen(false)}>建立</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </header>
+  );
+}
+
+/** Thumb-reachable tab bar for phones. */
+export function MobileTabBar() {
+  return (
+    <nav aria-label="主選單"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      <ul className="grid grid-cols-5">
+        {NAV.map((n) => (
+          <li key={n.to}>
+            <Link to={n.to} activeOptions={{ exact: n.exact }}
+              className={cn("flex h-16 flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground")}
+              activeProps={{ className: "!text-primary font-medium" }}>
+              <n.icon className="h-5 w-5" />{n.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
