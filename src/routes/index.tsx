@@ -30,7 +30,7 @@ interface FocusRow { key: string; title: string; projectId?: string | undefined;
 /** Fallback when Atlas hasn't written today's plan: overdue → due soon → in progress → next. */
 function autoFocus(tasks: TableTask[], today: string): TableTask[] {
   const open = tasks.filter((t) => t.status !== "done" && t.status !== "waiting" && (t.grp === "next" || t.dueDate || t.status === "doing"));
-  return sortTasks(open, today).slice(0, 3);
+  return sortTasks(open, today).slice(0, 6);
 }
 
 function TodayPage() {
@@ -80,7 +80,7 @@ function TodayPage() {
         <div className="flex items-center gap-3">
           <RobotAvatar id="atlas" size={44} />
           <div className="min-w-0">
-            <h2 className="font-semibold">今天 3 件事</h2>
+            <h2 className="font-semibold">今天 6 件事</h2>
             <p className="text-xs text-ink-muted">{fromAtlas ? "Atlas 今天早上排的" : "Atlas 還沒上班，先依期限和進度自動排"}</p>
           </div>
         </div>

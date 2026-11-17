@@ -108,7 +108,7 @@ export function useStore() {
     getAllLogs: () => logQuery.data ?? [],
     getFocus: (): FocusItem[] => {
       const value = metaQuery.data?.find((m) => m.key === "today_focus")?.value;
-      return Array.isArray(value) ? (value as FocusItem[]).filter((f) => f && typeof f.title === "string").slice(0, 3) : [];
+      return Array.isArray(value) ? (value as FocusItem[]).filter((f) => f && typeof f.title === "string").slice(0, 6) : [];
     },
     getLogs: (projectId: string) => (logQuery.data ?? []).filter((l) => l.project_id === projectId).slice(0, 5).map((l) => ({ ...l, date: formatDate(l.created_at) })),
     getTableTasks: (): TableTask[] => {
