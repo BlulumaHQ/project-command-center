@@ -101,6 +101,23 @@ const robots: Record<string, { bg: string; art: ReactNode }> = {
       </>
     ),
   },
+  scout: {
+    bg: "#FEF6DC",
+    art: (
+      <>
+        <path d="M-6,-34 L0,-50 L6,-34 Z" fill="#B45309" />
+        <rect x="-36" y="-34" width="72" height="66" rx="18" fill="#D97706" />
+        <rect x="-30" y="-12" width="24" height="22" rx="6" fill="#451A03" />
+        <rect x="6" y="-12" width="24" height="22" rx="6" fill="#451A03" />
+        <rect x="-6" y="-6" width="12" height="8" fill="#451A03" />
+        <circle cx="-18" cy="-1" r="7" fill="#67E8F9" />
+        <circle cx="18" cy="-1" r="7" fill="#67E8F9" />
+        <circle cx="-20" cy="-3" r="2.2" fill="#FFFFFF" />
+        <circle cx="16" cy="-3" r="2.2" fill="#FFFFFF" />
+        <path d="M-8,20 Q0,25 8,20" fill="none" stroke="#451A03" strokeWidth="2.5" strokeLinecap="round" />
+      </>
+    ),
+  },
   mia: {
     bg: "#FDE7F1",
     art: (
