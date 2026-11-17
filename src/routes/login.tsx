@@ -38,7 +38,7 @@ function Login() {
     finally { setPending(false); }
   }
   return <div className="mx-auto flex min-h-[65vh] max-w-sm flex-col justify-center py-12">
-    {logoFailed ? <span className="font-bold">BLULUMA DESIGN</span> : <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="mb-8 h-8 w-auto self-start" onError={() => setLogoFailed(true)} />}
+    {logoFailed ? <span className="font-bold">BLULUMA DESIGN</span> : <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="mb-8 h-14 w-auto self-start" onError={() => setLogoFailed(true)} />}
     <h1 className="text-2xl font-bold">Bluluma HQ</h1>
     <form onSubmit={submit} className="mt-8 space-y-5">
       <label className="block space-y-2 text-sm font-medium"><span>Email</span><Input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>

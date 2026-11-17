@@ -42,7 +42,7 @@ export function AppHeader() {
           {logoFailed ? (
             <span className="text-[13px] font-bold tracking-[0.12em] text-foreground">BLULUMA</span>
           ) : (
-            <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="h-6 w-auto" onError={() => setLogoFailed(true)} />
+            <img src="/images/bluluma-logo.svg" alt="Bluluma Design" className="h-9 w-auto" onError={() => setLogoFailed(true)} />
           )}
           <span className="h-5 w-px bg-border" aria-hidden />
           <span className="truncate text-sm font-medium text-muted-foreground">HQ</span>
