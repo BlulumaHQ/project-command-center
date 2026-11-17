@@ -16,6 +16,8 @@ interface MetaRow { key: string; value: unknown; }
 export type AgentStatus = "ok" | "check" | "broken" | "idle";
 export interface AgentRow { id: string; name: string; name_zh: string; role: string; skill: string | null; trigger_hint: string | null; avatar: string; is_manager: boolean; status: AgentStatus; status_note: string | null; last_run_at: string | null; sort: number; }
 export interface AgentRunRow { id: string; agent_id: string; project_id: string | null; summary: string; outcome: "ok" | "check" | "broken"; created_at: string; }
+export type LearnStatus = "new" | "todo" | "done" | "skip";
+export interface LearnRow { id: string; url: string; author: string | null; title: string | null; summary: string | null; category: string | null; usefulness: number | null; action: string | null; status: LearnStatus; source: string; created_at: string; }
 export interface FocusItem { title: string; project_id?: string; task_id?: string; why?: string; }
 
 async function readTable<T>(table: string, order = "sort", filter?: [string, boolean]): Promise<T[]> {
@@ -41,7 +43,7 @@ export function useStore() {
   const key = (table: string) => ["pcc", user?.id, table];
   const enabled = ready && Boolean(user);
   const options = { enabled, staleTime: 30_000, retry: 1 };
-  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery] = useQueries({ queries: [
+  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery, learnQuery] = useQueries({ queries: [
     { ...options, queryKey: key("pcc_projects"), queryFn: () => readTable<ProjectRow>("pcc_projects", "sort", ["archived", false]) },
     { ...options, queryKey: key("pcc_tasks"), queryFn: () => readTable<TaskRow>("pcc_tasks") },
     { ...options, queryKey: key("pcc_deadlines"), queryFn: () => readTable<DeadlineRow>("pcc_deadlines", "sort", ["done", false]) },
@@ -52,6 +54,7 @@ export function useStore() {
     { ...options, queryKey: key("pcc_notes"), queryFn: () => readTable<NoteRow>("pcc_notes", "created_at") },
     { ...options, queryKey: key("pcc_agents"), queryFn: () => readTable<AgentRow>("pcc_agents") },
     { ...options, queryKey: key("pcc_agent_runs"), queryFn: () => readTable<AgentRunRow>("pcc_agent_runs", "created_at") },
+    { ...options, queryKey: key("pcc_learning"), queryFn: () => readTable<LearnRow>("pcc_learning", "created_at") },
   ] });
 
   const mutation = useMutation({
@@ -74,7 +77,7 @@ export function useStore() {
     exec: () => run(supabase.from("pcc_tasks").update(remote).eq("id", taskId)),
   } as Op);
 
-  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery];
+  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery, learnQuery];
   const rows = projectsQuery.data ?? [];
   const taskRows = tasksQuery.data ?? [];
   const noteRows = notesQuery.data ?? [];
@@ -106,6 +109,12 @@ export function useStore() {
     },
     getAgentRuns: (agentId?: string) => (runsQuery.data ?? []).filter((r) => !agentId || r.agent_id === agentId),
     getAllLogs: () => logQuery.data ?? [],
+    getLearning: () => learnQuery.data ?? [],
+    setLearnStatus: async (id: string, status: LearnStatus) => {
+      client.setQueryData<LearnRow[]>(key("pcc_learning"), (list) => (list ?? []).map((l) => l.id === id ? { ...l, status } : l));
+      const { error } = await supabase.from("pcc_learning").update({ status }).eq("id", id);
+      if (error) toast.error(`儲存失敗：${error.message}`);
+    },
     getFocus: (): FocusItem[] => {
       const value = metaQuery.data?.find((m) => m.key === "today_focus")?.value;
       return Array.isArray(value) ? (value as FocusItem[]).filter((f) => f && typeof f.title === "string").slice(0, 6) : [];
