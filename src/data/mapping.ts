@@ -42,7 +42,10 @@ export function mapProject(row: ProjectRow, taskRows: TaskRow[]): Project {
 export function getProgress(project: Project) {
   const tasks = project.detail?.tasks ?? [];
   const done = tasks.filter((t) => t.done).length;
-  return { done, total: tasks.length, pct: tasks.length >= 5 ? Math.round(done / tasks.length * 100) : project.pct, open: tasks.length ? tasks.length - done : project.open };
+  // Tasks are the checklist: once a project has any, its % is done / total (all done = 100%).
+  // Projects with no tasks yet fall back to the manual estimate; status "done" is always 100%.
+  const pct = project.status === "done" ? 100 : tasks.length ? Math.round(done / tasks.length * 100) : project.pct;
+  return { done, total: tasks.length, pct, open: tasks.length ? tasks.length - done : project.open };
 }
 
 export function latestSync(projects: ProjectRow[], tasks: TaskRow[]) {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatDate, getProgress, latestSync, mapProject, recentProjects, relativeActivityTime, type ProjectRow, type TaskRow } from "@/data/mapping";
 
 const project: ProjectRow = {
-  id: "one", name: "One", brand: "Brand", category: "client", status: "done", pct: 80,
+  id: "one", name: "One", brand: "Brand", category: "client", status: "progress", pct: 80,
   next_step: "Next", open_count: 7, description: null, now_title: null, now_note: null,
   handoff: null, decisions: null, links: null, phases: null, undecided: null, updated_at: "2026-11-16T06:32:00Z",
 };
@@ -13,12 +13,13 @@ describe("Existing dashboard data rules", () => {
     const mapped = mapProject(project, [task("a", "next", false), task("b", "later", false), task("c", "next", true), task("d", "later", true)]);
     expect(mapped.detail?.tasks.map((t) => t.group)).toEqual(["next", "later", "done", "done"]);
   });
-  it("uses the project percentage below five tasks, with actual open count", () => {
-    expect(getProgress(mapProject(project, [task("a", "next", false), task("b", "later", true)]))).toEqual({ done: 1, total: 2, pct: 80, open: 1 });
-    expect(getProgress(mapProject(project, Array.from({ length: 4 }, (_, i) => task(String(i), "next", false)))).pct).toBe(80);
-  });
-  it("computes percentage from tasks starting at five tasks", () => {
+  it("computes percentage from tasks whenever a project has any", () => {
+    expect(getProgress(mapProject(project, [task("a", "next", false), task("b", "later", true)]))).toEqual({ done: 1, total: 2, pct: 50, open: 1 });
     expect(getProgress(mapProject(project, Array.from({ length: 5 }, (_, i) => task(String(i), "next", i < 2))))).toEqual({ done: 2, total: 5, pct: 40, open: 3 });
+  });
+  it("shows 100% when every task is done or the project is marked done", () => {
+    expect(getProgress(mapProject(project, [task("a", "next", true)])).pct).toBe(100);
+    expect(getProgress(mapProject({ ...project, status: "done" }, [])).pct).toBe(100);
   });
   it("uses project percentage and count when there are no tasks", () => {
     expect(getProgress(mapProject(project, []))).toEqual({ done: 0, total: 0, pct: 80, open: 7 });

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { getProgress, useStore } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
-import type { Category } from "@/data/types";
+import type { Category, Project } from "@/data/types";
 import { ProgressBar, StatusChip } from "@/components/ui-bits";
 import { Input } from "@/components/ui/input";
 import { ViewSwitch } from "@/components/ViewSwitch";
@@ -24,10 +24,13 @@ export const Route = createFileRoute("/projects")({
   component: ProjectsPage,
 });
 
-type Tab = "all" | Category | "almost";
+type Tab = "all" | Category | "almost" | "done";
 const tabs: { id: Tab; label: string }[] = [
-  { id: "all", label: "全部" }, { id: "client", label: "客戶" }, { id: "product", label: "自己產品" }, { id: "system", label: "系統" }, { id: "almost", label: "快完成" },
+  { id: "all", label: "全部" }, { id: "client", label: "客戶" }, { id: "product", label: "自己產品" }, { id: "system", label: "系統" }, { id: "almost", label: "快完成" }, { id: "done", label: "已完成" },
 ];
+
+/** 100% = status done, or every task checked off. */
+const isComplete = (p: Project) => { const pr = getProgress(p); return p.status === "done" || (pr.total > 0 && pr.pct === 100); };
 
 function ProjectsPage() {
   const store = useStore();
@@ -36,10 +39,12 @@ function ProjectsPage() {
   const [tab, setTab] = useState<Tab>("all");
   if (store.error) return <DataError message={store.error} retry={store.retry} />;
   if (store.loading) return <DataSkeleton />;
-  const projects = store.getProjects();
+  const all = store.getProjects();
+  const completed = all.filter(isComplete);
+  const projects = all.filter((p) => !isComplete(p));
   const query = (q ?? "").toLowerCase();
-  const filtered = projects.filter((p) => {
-    if (tab === "almost" ? getProgress(p).pct < 90 : tab !== "all" && p.category !== tab) return false;
+  const filtered = (tab === "done" ? completed : projects).filter((p) => {
+    if (tab === "almost" ? getProgress(p).pct < 90 : tab !== "all" && tab !== "done" && p.category !== tab) return false;
     return !query || [p.name, p.brand, p.next].some((s) => s.toLowerCase().includes(query));
   });
 
@@ -48,7 +53,7 @@ function ProjectsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">專案</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{projects.length} 個進行中 · 最後同步 {store.getMeta().lastSynced}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{projects.length} 個進行中 · {completed.length} 個已完成 · 最後同步 {store.getMeta().lastSynced}</p>
         </div>
         <ViewSwitch current="projects" />
       </div>
@@ -64,14 +69,14 @@ function ProjectsPage() {
           {tabs.map((t) => (
             <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
               className={cn("h-9 whitespace-nowrap rounded-lg px-3.5 text-sm transition-colors", tab === t.id ? "bg-ink text-ink-foreground" : "text-muted-foreground hover:text-foreground")}>
-              {t.label}
+              {t.label}{t.id === "done" && completed.length ? ` ${completed.length}` : ""}
             </button>
           ))}
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="panel p-10 text-center text-sm text-muted-foreground">沒有符合的專案</div>
+        <div className="panel p-10 text-center text-sm text-muted-foreground">{tab === "done" ? "還沒有完成的專案" : "沒有符合的專案"}</div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p) => {
