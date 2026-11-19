@@ -138,6 +138,86 @@ const robots: Record<string, { bg: string; art: ReactNode }> = {
       </>
     ),
   },
+  // ── Bluluma 董事會 (original robots, not likenesses) ──
+  hormozi: {
+    bg: "#FFEEDF",
+    art: (
+      <>
+        <rect x="-36" y="-30" width="72" height="64" rx="12" fill="#EA580C" />
+        <path d="M-38,-26 Q-38,-52 0,-52 Q38,-52 38,-26 Z" fill="#1F2937" />
+        <rect x="-4" y="-50" width="8" height="5" rx="2" fill="#F97316" />
+        <path d="M-38,-27 L54,-27 Q56,-20 38,-20 L-38,-20 Z" fill="#111827" />
+        <rect x="-28" y="-12" width="56" height="18" rx="9" fill="#431407" />
+        <rect x="-20" y="-7" width="12" height="7" rx="3" fill="#FED7AA" />
+        <rect x="8" y="-7" width="12" height="7" rx="3" fill="#FED7AA" />
+        <path d="M-22,12 Q0,30 22,12 L22,20 Q0,36 -22,20 Z" fill="#7C2D12" />
+        <text x="0" y="24" textAnchor="middle" fontSize="11" fontWeight="800" fill="#FDBA74">$</text>
+      </>
+    ),
+  },
+  naval: {
+    bg: "#DDF6F2",
+    art: (
+      <>
+        <ellipse cx="0" cy="-48" rx="20" ry="5" fill="none" stroke="#FACC15" strokeWidth="3" />
+        <circle cx="0" cy="0" r="38" fill="#0D9488" />
+        <rect x="-26" y="-16" width="52" height="32" rx="14" fill="#F0FDFA" />
+        <path d="M-17,-2 Q-11,4 -5,-2" fill="none" stroke="#134E4A" strokeWidth="3" strokeLinecap="round" />
+        <path d="M5,-2 Q11,4 17,-2" fill="none" stroke="#134E4A" strokeWidth="3" strokeLinecap="round" />
+        <path d="M-5,9 Q0,12 5,9" fill="none" stroke="#134E4A" strokeWidth="2.5" strokeLinecap="round" />
+        <circle cx="0" cy="-27" r="3" fill="#5EEAD4" />
+      </>
+    ),
+  },
+  codie: {
+    bg: "#FDE7F1",
+    art: (
+      <>
+        <path d="M24,-30 Q48,-30 44,4 Q40,-14 26,-18 Z" fill="#9D174D" />
+        <rect x="-34" y="-34" width="68" height="66" rx="20" fill="#DB2777" />
+        <rect x="-30" y="-10" width="26" height="14" rx="5" fill="#1F2937" />
+        <rect x="4" y="-10" width="26" height="14" rx="5" fill="#1F2937" />
+        <rect x="-4" y="-6" width="8" height="3" fill="#1F2937" />
+        <rect x="-26" y="-8" width="6" height="3" rx="1.5" fill="#F9A8D4" />
+        <rect x="8" y="-8" width="6" height="3" rx="1.5" fill="#F9A8D4" />
+        <path d="M-10,16 Q0,23 10,16" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+        <rect x="-50" y="12" width="20" height="15" rx="3" fill="#78350F" />
+        <rect x="-44" y="8" width="8" height="5" rx="1.5" fill="none" stroke="#78350F" strokeWidth="2" />
+      </>
+    ),
+  },
+  chrisdo: {
+    bg: "#E7E8FD",
+    art: (
+      <>
+        <line x1="30" y1="-36" x2="44" y2="-56" stroke="#F5F5F4" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="45" cy="-58" r="2.5" fill="#A5B4FC" />
+        <path d="M-36,34 L-36,-6 Q-36,-40 0,-40 Q36,-40 36,-6 L36,34 Z" fill="#4338CA" />
+        <circle cx="-14" cy="0" r="12" fill="#EEF2FF" stroke="#111827" strokeWidth="3.5" />
+        <circle cx="14" cy="0" r="12" fill="#EEF2FF" stroke="#111827" strokeWidth="3.5" />
+        <line x1="-2" y1="0" x2="2" y2="0" stroke="#111827" strokeWidth="3" />
+        <circle cx="-14" cy="1" r="4" fill="#1E1B4B" />
+        <circle cx="14" cy="1" r="4" fill="#1E1B4B" />
+        <path d="M-8,22 L8,22" stroke="#C7D2FE" strokeWidth="3" strokeLinecap="round" />
+      </>
+    ),
+  },
+  paula: {
+    bg: "#FEF6D2",
+    art: (
+      <>
+        <line x1="-22" y1="-34" x2="-34" y2="-56" stroke="#78350F" strokeWidth="4" strokeLinecap="round" />
+        <path d="M-36,-54 Q-46,-66 -38,-50 Z" fill="#DC2626" />
+        <rect x="-36" y="-34" width="72" height="68" rx="8" fill="#CA8A04" />
+        <text x="16" y="-12" textAnchor="middle" fontSize="20" fontWeight="900" fill="#FEF9C3" fontFamily="Georgia, serif">Aa</text>
+        <circle cx="-14" cy="2" r="8" fill="#FFFFFF" />
+        <circle cx="14" cy="6" r="8" fill="#FFFFFF" />
+        <circle cx="-13" cy="3" r="4" fill="#422006" />
+        <circle cx="15" cy="7" r="4" fill="#422006" />
+        <path d="M-12,20 Q0,30 12,20" fill="none" stroke="#422006" strokeWidth="3" strokeLinecap="round" />
+      </>
+    ),
+  },
 };
 
 /** Generic fallback so a new agent added in Supabase still gets a face. */

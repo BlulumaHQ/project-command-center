@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bot, FolderKanban, GraduationCap, History, LayoutGrid, LogOut, Sun } from "lucide-react";
+import { Bot, FolderKanban, GraduationCap, History, Landmark, LayoutGrid, LogOut, Sun } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ export const NAV = [
   { to: "/projects", label: "專案", icon: FolderKanban, exact: false },
   { to: "/learn", label: "學習", icon: GraduationCap, exact: false },
   { to: "/team", label: "AI 團隊", icon: Bot, exact: false },
+  { to: "/board", label: "董事會", icon: Landmark, exact: false },
   { to: "/tools", label: "工具", icon: LayoutGrid, exact: false },
   { to: "/log", label: "紀錄", icon: History, exact: false },
 ] as const;
@@ -69,11 +70,11 @@ export function MobileTabBar() {
   return (
     <nav aria-label="主選單"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <ul className="grid grid-cols-6">
+      <ul className="grid grid-cols-7">
         {NAV.map((n) => (
           <li key={n.to}>
             <Link to={n.to} activeOptions={{ exact: n.exact }}
-              className={cn("flex h-16 flex-col items-center justify-center gap-1 whitespace-nowrap text-[10.5px] text-muted-foreground")}
+              className={cn("flex h-16 flex-col items-center justify-center gap-1 whitespace-nowrap text-[10px] text-muted-foreground")}
               activeProps={{ className: "!text-primary font-medium" }}>
               <n.icon className="h-5 w-5" />{n.label}
             </Link>
