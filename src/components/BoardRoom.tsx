@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { robotArt } from "@/components/RobotAvatar";
+import { useCenteredScroll } from "@/components/AgentOffice";
 import type { Director } from "@/lib/board";
 
 /**
@@ -26,7 +27,6 @@ function css(n: number) {
 @keyframes bdr-idle{to{transform:translateY(-1.5px)}}
 .bdr-lamp{animation:bdr-lamp 4s ease-in-out infinite alternate}
 @keyframes bdr-lamp{to{opacity:.55}}
-@media (prefers-reduced-motion:reduce){.bdr *{animation:none!important}.bdr-bubble,.bdr-glow{opacity:0}}
 `;
 }
 
@@ -121,10 +121,12 @@ export function BoardRoom({
   const list = directors.slice(0, 6);
   const pos = seats(list.length);
   const isOn = (id: string) => picked.length === 0 || picked.includes(id);
+  const scroller = useCenteredScroll();
   return (
     <section className="panel overflow-hidden p-0" aria-label="董事會會議室動畫">
       <style>{css(list.length)}</style>
-      <svg className="bdr block h-auto w-full" viewBox="0 0 800 300" role="img">
+      <div ref={scroller} className="overflow-x-auto overscroll-x-contain sm:overflow-visible">
+      <svg className="bdr block h-auto w-full min-w-[600px] sm:min-w-0" viewBox="0 0 800 300" role="img">
         <title>Bluluma 董事會會議室</title>
         {/* room */}
         <rect width={800} height={150} fill="#1E293B" />
@@ -226,6 +228,7 @@ export function BoardRoom({
           </text>
         </g>
       </svg>
+      </div>
     </section>
   );
 }

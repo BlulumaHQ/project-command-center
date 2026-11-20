@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { AgentRow } from "@/data/store";
 import { robotArt } from "@/components/RobotAvatar";
 
@@ -85,7 +85,6 @@ const CSS = `
 @keyframes hqo-wave{from{transform:rotate(-30deg)}to{transform:rotate(-60deg)}}
 .hqo-agent{cursor:pointer}
 .hqo-agent:hover .hqo-head{filter:brightness(1.08)}
-@media (prefers-reduced-motion:reduce){.hqo *{animation:none!important}}
 `;
 
 function Desk({ x, y, big = false, screenColor }: { x: number; y: number; big?: boolean; screenColor: string }) {
@@ -287,11 +286,20 @@ function nextAction(a: AgentRow, recent: boolean, taken: Set<Action>): Action {
   return "work";
 }
 
+/** On phones the scene is wider than the screen: start scrolled to the middle, swipe to see the rest. */
+export function useCenteredScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+  }, []);
+  return ref;
+}
+
 function useOfficeLife(agents: AgentRow[], isRecent: (a: AgentRow) => boolean) {
   const [acts, setActs] = useState<Record<string, ActState>>({});
   const ids = agents.map((a) => `${a.id}:${a.status}`).join(",");
   useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     let counter = 0;
     const tick = (first: boolean) => {
       setActs((prev) => {
@@ -330,6 +338,7 @@ export function AgentOffice({ agents, lastRunOf }: { agents: AgentRow[]; lastRun
   const now = Date.now();
   const isRecent = (a: AgentRow) => now - lastRunOf(a) < 30 * 60 * 1000;
   const acts = useOfficeLife(agents, isRecent);
+  const scroller = useCenteredScroll();
   if (agents.length === 0) return null;
   const pick = (id: string) => document.getElementById(`agent-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const robotFor = (a: AgentRow, x: number) => {
@@ -343,7 +352,8 @@ export function AgentOffice({ agents, lastRunOf }: { agents: AgentRow[]; lastRun
   return (
     <section className="panel overflow-hidden p-0" aria-label="AI 團隊辦公室動畫">
       <style>{CSS}</style>
-      <svg className="hqo block h-auto w-full" viewBox="0 0 800 262" role="img">
+      <div ref={scroller} className="overflow-x-auto overscroll-x-contain sm:overflow-visible">
+      <svg className="hqo block h-auto w-full min-w-[620px] sm:min-w-0" viewBox="0 0 800 262" role="img">
         <title>AI 團隊辦公室</title>
         <rect width={800} height={112} fill="#EEF2F7" />
         <rect y={112} width={800} height={150} fill="#F6F1E8" />
@@ -394,6 +404,7 @@ export function AgentOffice({ agents, lastRunOf }: { agents: AgentRow[]; lastRun
           </g>
         ))}
       </svg>
+      </div>
     </section>
   );
 }
