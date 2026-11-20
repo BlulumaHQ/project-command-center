@@ -75,7 +75,7 @@ function FixDialog({ agent, onClose, onReported }: { agent: AgentRow | null; onC
         </DialogHeader>
         <label className="block text-sm font-medium" htmlFor="fix-problem">哪裡做錯了？</label>
         <Textarea id="fix-problem" value={problem} onChange={(e) => setProblem(e.target.value)} rows={4} autoFocus
-          placeholder="例如：上線後 favicon 還是 Lovable 的、忘了關 badge…" />
+          placeholder="例如：上線後 favicon 沒換、Contact form 收不到信…" />
         <div className="grid gap-2 sm:grid-cols-2">
           <Button onClick={openClaude} disabled={!problem.trim()} className="h-11"><ExternalLink className="h-4 w-4" />交給 Claude 修</Button>
           <Button variant="outline" onClick={() => void copy()} disabled={!problem.trim()} className="h-11"><Copy className="h-4 w-4" />複製指令</Button>
@@ -106,7 +106,7 @@ function AgentCard({ agent, lastRun, runs, onFix, manager = false }: {
       <dl className="mt-3 space-y-1 text-xs text-muted-foreground">
         {agent.trigger_hint && <div className="flex gap-2"><dt className="shrink-0">怎麼叫他</dt><dd className="text-foreground">{agent.trigger_hint}</dd></div>}
         <div className="flex gap-2"><dt className="shrink-0">上次工作</dt><dd className="text-foreground">{relativeActivityTime(lastRun)}</dd></div>
-        {agent.skill && <div className="flex gap-2"><dt className="shrink-0">Skill</dt><dd className="truncate font-mono">{agent.skill}</dd></div>}
+        {agent.skill && <div className="flex gap-2"><dt className="shrink-0">Skill</dt><dd className="truncate font-mono">{agent.skill.replace(/-?lovable-?/gi, "-").replace(/^-|-$/g, "")}</dd></div>}
       </dl>
       {open && (
         <ul className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs">
