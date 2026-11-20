@@ -27,6 +27,12 @@ export const Route = createFileRoute("/board")({
 
 const byId = (id: string): Director | undefined => DIRECTORS.find((d) => d.id === id);
 
+const EXAMPLE_PROMPTS = [
+  "例如：明年要把 recurring revenue 拉到總營收的 50%，應該優先投資 AI 自動化、white-label 合作夥伴，還是高端品牌專案？",
+  "例如：Bluluma 應該從按專案報價，轉型成月費制的 growth partner 嗎？這對 cash flow、客戶留存和品牌定位各有什麼影響？",
+  "例如：要鞏固 Bluluma 的 premium 定位，該走垂直產業專精（醫療、地產），還是加深 brand strategy 服務？",
+];
+
 function Minutes({ turn }: { turn: BoardTurn }) {
   const m = turn.minutes;
   return (
@@ -120,6 +126,9 @@ function Minutes({ turn }: { turn: BoardTurn }) {
 function BoardPage() {
   const board = useBoard();
   const [topic, setTopic] = useState("");
+  const [examplePrompt] = useState(
+    () => EXAMPLE_PROMPTS[Math.floor(Math.random() * EXAMPLE_PROMPTS.length)],
+  );
   const [picked, setPicked] = useState<string[]>([]); // empty = everyone
   const [activeId, setActiveId] = useState<string | null>(null);
   const active: MeetingRow | null = board.meetings.find((m) => m.id === activeId) ?? null;
@@ -202,7 +211,7 @@ function BoardPage() {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) start();
           }}
           placeholder={
-            active ? "例如：那 Developer 應該定多少？" : "例如：SwiftSite 要不要從 $99 漲到 $149？"
+            active ? "例如：那 Developer 應該定多少？" : examplePrompt
           }
         />
         {busy ? (
