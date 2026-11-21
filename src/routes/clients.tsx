@@ -256,8 +256,8 @@ function ClientDetail({
             <p className="mt-2 text-sm text-muted-foreground">還沒填</p>
           ) : (
             <ul className="mt-2 divide-y divide-border text-sm">
-              {(c.accounts ?? []).map((a) => (
-                <li key={a.label} className="flex min-h-10 items-center gap-3 py-2">
+              {(c.accounts ?? []).map((a, i) => (
+                <li key={`${a.label}-${i}`} className="flex min-h-10 items-center gap-3 py-2">
                   <span className="w-28 shrink-0 text-muted-foreground">{a.label}</span>
                   <span className="min-w-0 flex-1 font-medium">{a.value}</span>
                   {a.owner && (
