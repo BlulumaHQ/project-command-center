@@ -11,13 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BoardRouteImport } from './routes/board'
+import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as LearnRouteImport } from './routes/learn'
 import { Route as LogRouteImport } from './routes/log'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MoneyRouteImport } from './routes/money'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as ToolsRouteImport } from './routes/tools'
+import { Route as ApiAssistantRouteImport } from './routes/api.assistant'
 import { Route as ProjectIdRouteImport } from './routes/project.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -28,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 const BoardRoute = BoardRouteImport.update({
   id: '/board',
   path: '/board',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsRoute = ClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LearnRoute = LearnRouteImport.update({
@@ -43,6 +52,16 @@ const LogRoute = LogRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MoneyRoute = MoneyRouteImport.update({
+  id: '/money',
+  path: '/money',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -65,6 +84,11 @@ const ToolsRoute = ToolsRouteImport.update({
   path: '/tools',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAssistantRoute = ApiAssistantRouteImport.update({
+  id: '/api/assistant',
+  path: '/api/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectIdRoute = ProjectIdRouteImport.update({
   id: '/project/$id',
   path: '/project/$id',
@@ -74,38 +98,50 @@ const ProjectIdRoute = ProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/board': typeof BoardRoute
+  '/clients': typeof ClientsRoute
   '/learn': typeof LearnRoute
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/money': typeof MoneyRoute
+  '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
+  '/api/assistant': typeof ApiAssistantRoute
   '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/board': typeof BoardRoute
+  '/clients': typeof ClientsRoute
   '/learn': typeof LearnRoute
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/money': typeof MoneyRoute
+  '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
+  '/api/assistant': typeof ApiAssistantRoute
   '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/board': typeof BoardRoute
+  '/clients': typeof ClientsRoute
   '/learn': typeof LearnRoute
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/money': typeof MoneyRoute
+  '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
+  '/api/assistant': typeof ApiAssistantRoute
   '/project/$id': typeof ProjectIdRoute
 }
 export interface FileRouteTypes {
@@ -113,50 +149,66 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/board'
+    | '/clients'
     | '/learn'
     | '/log'
     | '/login'
+    | '/money'
+    | '/pricing'
     | '/projects'
     | '/tasks'
     | '/team'
     | '/tools'
+    | '/api/assistant'
     | '/project/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/board'
+    | '/clients'
     | '/learn'
     | '/log'
     | '/login'
+    | '/money'
+    | '/pricing'
     | '/projects'
     | '/tasks'
     | '/team'
     | '/tools'
+    | '/api/assistant'
     | '/project/$id'
   id:
     | '__root__'
     | '/'
     | '/board'
+    | '/clients'
     | '/learn'
     | '/log'
     | '/login'
+    | '/money'
+    | '/pricing'
     | '/projects'
     | '/tasks'
     | '/team'
     | '/tools'
+    | '/api/assistant'
     | '/project/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BoardRoute: typeof BoardRoute
+  ClientsRoute: typeof ClientsRoute
   LearnRoute: typeof LearnRoute
   LogRoute: typeof LogRoute
   LoginRoute: typeof LoginRoute
+  MoneyRoute: typeof MoneyRoute
+  PricingRoute: typeof PricingRoute
   ProjectsRoute: typeof ProjectsRoute
   TasksRoute: typeof TasksRoute
   TeamRoute: typeof TeamRoute
   ToolsRoute: typeof ToolsRoute
+  ApiAssistantRoute: typeof ApiAssistantRoute
   ProjectIdRoute: typeof ProjectIdRoute
 }
 
@@ -174,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/board'
       fullPath: '/board'
       preLoaderRoute: typeof BoardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients': {
+      id: '/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof ClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/learn': {
@@ -195,6 +254,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/money': {
+      id: '/money'
+      path: '/money'
+      fullPath: '/money'
+      preLoaderRoute: typeof MoneyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -225,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/assistant': {
+      id: '/api/assistant'
+      path: '/api/assistant'
+      fullPath: '/api/assistant'
+      preLoaderRoute: typeof ApiAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/project/$id': {
       id: '/project/$id'
       path: '/project/$id'
@@ -238,13 +318,17 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BoardRoute: BoardRoute,
+  ClientsRoute: ClientsRoute,
   LearnRoute: LearnRoute,
   LogRoute: LogRoute,
   LoginRoute: LoginRoute,
+  MoneyRoute: MoneyRoute,
+  PricingRoute: PricingRoute,
   ProjectsRoute: ProjectsRoute,
   TasksRoute: TasksRoute,
   TeamRoute: TeamRoute,
   ToolsRoute: ToolsRoute,
+  ApiAssistantRoute: ApiAssistantRoute,
   ProjectIdRoute: ProjectIdRoute,
 }
 export const routeTree = rootRouteImport

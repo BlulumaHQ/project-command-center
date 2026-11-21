@@ -6,6 +6,8 @@ import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { RobotAvatar } from "@/components/RobotAvatar";
 import { NotesBox } from "@/components/NotesBox";
+import { OfficeStrip } from "@/components/OfficeStrip";
+import { NotConnected } from "@/components/ui-bits";
 import { relativeActivityTime } from "@/data/mapping";
 import { dueTone, matchesFilter, sortTasks, vancouverDate, type TableTask } from "@/data/tasks";
 import { cn } from "@/lib/utils";
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/")({
   beforeLoad: requireSignedIn,
   head: () => ({
     meta: [
-      { title: "今天 · Bluluma HQ" },
+      { title: "今日 · Bluluma HQ" },
       { name: "description", content: "今天要做的事、快到期的期限、等別人回覆的事項。" },
       { property: "og:title", content: "今天 · Bluluma HQ" },
       { property: "og:description", content: "今天要做的事、快到期的期限、等別人回覆的事項。" },
@@ -61,6 +63,8 @@ function TodayPage() {
   const chain = store.getChain();
   const dueSoon = tasks.filter((t) => t.status !== "done" && dueTone(t.dueDate, today) !== "none").length;
   const nextCount = tasks.filter((t) => matchesFilter(t, "next", today)).length;
+  const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Vancouver", hour: "numeric", hourCycle: "h23" }).format(new Date()));
+  const greeting = hour < 12 ? "早安" : hour < 18 ? "午安" : "晚安";
   const dateLabel = new Intl.DateTimeFormat("zh-TW", { timeZone: "America/Vancouver", month: "long", day: "numeric", weekday: "long" }).format(new Date());
 
   const chips = [
@@ -73,7 +77,23 @@ function TodayPage() {
     <div className="space-y-5">
       <div>
         <p className="text-sm text-muted-foreground">{dateLabel}</p>
-        <h1 className="mt-0.5 text-2xl font-bold tracking-tight">今天</h1>
+        <h1 className="mt-0.5 text-2xl font-bold tracking-tight md:text-3xl">{greeting}，Sony</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{focus.filter((f) => !f.done).length} 件事 · {waiting.length} 個等回覆 · {dueSoon} 個有期限</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="panel flex flex-col gap-2 p-4">
+          <div className="flex items-center justify-between"><p className="text-[13px] font-semibold text-muted-foreground">今日 Outreach</p><NotConnected /></div>
+          <p className="text-3xl font-bold tabular-nums">— / 20</p>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full w-0 bg-primary" /></div>
+          <p className="text-xs text-muted-foreground">接上 cold email 紀錄後自動計數</p>
+        </div>
+        <Link to="/tasks" search={{ filter: "waiting" }} className="panel flex flex-col gap-2 p-4 transition-colors hover:border-primary/50">
+          <p className="text-[13px] font-semibold text-muted-foreground">待 Follow-up</p>
+          <p className="text-3xl font-bold tabular-nums">{waiting.length}</p>
+          <p className="truncate text-xs text-muted-foreground">{waiting.slice(0, 2).map((w) => w.who).join(" · ") || "沒有在等的人"}</p>
+        </Link>
+        <OfficeStrip count={store.getAgents().length || 6} />
       </div>
 
       <section className="rounded-[20px] bg-ink p-5 text-ink-foreground sm:p-6">

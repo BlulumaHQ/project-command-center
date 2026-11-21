@@ -13,7 +13,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AppHeader, MobileTabBar } from "../components/AppHeader";
+import { MobileTabBar, MobileTopBar, Sidebar } from "../components/AppShell";
+import { Assistant } from "../components/Assistant";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { DataSkeleton } from "@/components/DataState";
 import { Toaster } from "@/components/ui/sonner";
@@ -143,16 +144,20 @@ function AppLayout() {
   const { user, ready } = useAuth();
   const signedIn = !loginPage && ready && Boolean(user);
   return <>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {signedIn && <AppHeader />}
+      {signedIn && <Sidebar />}
+      {signedIn && <MobileTopBar />}
       <Toaster position="top-center" />
-      <main className={signedIn ? "mx-auto max-w-7xl px-4 pb-28 pt-5 sm:px-6 md:pb-16 md:pt-6 lg:px-8" : "mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8"}>
-        {loginPage || (ready && user) ? <Outlet /> : <DataSkeleton />}
-      </main>
-      <footer className={signedIn ? "hidden border-t border-border py-6 text-center text-xs text-muted-foreground md:block" : "border-t border-border py-6 text-center text-xs text-muted-foreground"}>
-        © {new Date().getFullYear()} Bluluma Design. Website by{" "}
-        <a href="https://bluluma.com" className="underline-offset-2 hover:underline">Bluluma Design</a>
-      </footer>
+      <div className={signedIn ? "md:pl-60" : undefined}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <main className={signedIn ? "mx-auto max-w-6xl px-4 pb-28 pt-5 sm:px-6 md:pb-16 md:pt-8 lg:px-10" : "mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8"}>
+          {loginPage || (ready && user) ? <Outlet /> : <DataSkeleton />}
+        </main>
+        <footer className={signedIn ? "hidden border-t border-border py-6 text-center text-xs text-muted-foreground md:block" : "border-t border-border py-6 text-center text-xs text-muted-foreground"}>
+          © {new Date().getFullYear()} Bluluma Design. Website by{" "}
+          <a href="https://bluluma.com" className="underline-offset-2 hover:underline">Bluluma Design</a>
+        </footer>
+      </div>
       {signedIn && <MobileTabBar />}
+      {signedIn && <Assistant />}
     </>;
 }
