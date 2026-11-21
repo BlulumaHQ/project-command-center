@@ -1,5 +1,7 @@
 {
   "name": "bluluma-hq",
   "compatibility_date": "2026-11-12",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  // Lets Workers Builds publish non-production branches (e.g. hq-2) as Previews.
+  "previews": {}
 }
