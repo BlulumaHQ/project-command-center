@@ -150,4 +150,11 @@ export const GUEST_POOL: Guest[] = [
     lens: "用內容建立受眾、把自己的知識包成數位產品、一個人 + AI 工具跑整間公司",
     asks: "這件事能不能變成你自己的內容或產品，讓客人主動來找你？",
   },
+  {
+    id: "martell",
+    name: "Dan Martell",
+    focus: "買回時間 & AI 導入",
+    lens: "Buy Back Your Time：把低價值工作交給人或 AI、先建系統再擴張、SaaS 式 recurring 銷售",
+    asks: "這件事你一小時值多少？可以交給 AI 或別人做嗎？",
+  },
 ];
