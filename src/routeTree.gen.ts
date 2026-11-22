@@ -14,6 +14,7 @@ import { Route as BoardRouteImport } from './routes/board'
 import { Route as LearnRouteImport } from './routes/learn'
 import { Route as LogRouteImport } from './routes/log'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MonitorRouteImport } from './routes/monitor'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as TeamRouteImport } from './routes/team'
@@ -43,6 +44,11 @@ const LogRoute = LogRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonitorRoute = MonitorRouteImport.update({
+  id: '/monitor',
+  path: '/monitor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/learn': typeof LearnRoute
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/monitor': typeof MonitorRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/learn': typeof LearnRoute
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/monitor': typeof MonitorRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/learn': typeof LearnRoute
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
+  '/monitor': typeof MonitorRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/learn'
     | '/log'
     | '/login'
+    | '/monitor'
     | '/projects'
     | '/tasks'
     | '/team'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/learn'
     | '/log'
     | '/login'
+    | '/monitor'
     | '/projects'
     | '/tasks'
     | '/team'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/learn'
     | '/log'
     | '/login'
+    | '/monitor'
     | '/projects'
     | '/tasks'
     | '/team'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   LearnRoute: typeof LearnRoute
   LogRoute: typeof LogRoute
   LoginRoute: typeof LoginRoute
+  MonitorRoute: typeof MonitorRoute
   ProjectsRoute: typeof ProjectsRoute
   TasksRoute: typeof TasksRoute
   TeamRoute: typeof TeamRoute
@@ -195,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monitor': {
+      id: '/monitor'
+      path: '/monitor'
+      fullPath: '/monitor'
+      preLoaderRoute: typeof MonitorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   LearnRoute: LearnRoute,
   LogRoute: LogRoute,
   LoginRoute: LoginRoute,
+  MonitorRoute: MonitorRoute,
   ProjectsRoute: ProjectsRoute,
   TasksRoute: TasksRoute,
   TeamRoute: TeamRoute,

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bot, FolderKanban, GraduationCap, History, Landmark, LayoutGrid, LogOut, Sun } from "lucide-react";
+import { Activity, Bot, FolderKanban, GraduationCap, History, Landmark, LayoutGrid, LogOut, Sun } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export const NAV = [
   { to: "/learn", label: "學習", icon: GraduationCap, exact: false },
   { to: "/team", label: "AI 團隊", icon: Bot, exact: false },
   { to: "/board", label: "董事會", icon: Landmark, exact: false },
+  { to: "/monitor", label: "監控", icon: Activity, exact: false },
   { to: "/tools", label: "工具", icon: LayoutGrid, exact: false },
   { to: "/log", label: "紀錄", icon: History, exact: false },
 ] as const;
@@ -70,7 +71,7 @@ export function MobileTabBar() {
   return (
     <nav aria-label="主選單"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <ul className="grid grid-cols-7">
+      <ul className="grid grid-cols-8">
         {NAV.map((n) => (
           <li key={n.to}>
             <Link to={n.to} activeOptions={{ exact: n.exact }}
