@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  Activity,
   Bot,
   CircleDollarSign,
   ExternalLink,
@@ -11,6 +12,7 @@ import {
   ListChecks,
   LogOut,
   Menu,
+  NotebookPen,
   Sun,
   Tag,
   Users,
@@ -34,11 +36,13 @@ export const NAV: NavItem[] = [
   { to: "/", label: "今日", icon: Sun, exact: true },
   { to: "/projects", label: "專案", icon: FolderKanban },
   { to: "/tasks", label: "任務", icon: ListChecks },
+  { to: "/notes", label: "隨手記", icon: NotebookPen },
   { to: "/clients", label: "客戶", icon: Users },
   { to: "/pricing", label: "價目表", icon: Tag },
   { to: "/money", label: "財務", icon: CircleDollarSign },
   { to: "/team", label: "AI 團隊", icon: Bot },
   { to: "/board", label: "董事會", icon: Landmark },
+  { to: "/monitor", label: "監控", icon: Activity },
   { to: "/learn", label: "學習", icon: GraduationCap },
   { to: "/tools", label: "工具 & 手冊", icon: LayoutGrid },
   { to: "/log", label: "紀錄", icon: History },

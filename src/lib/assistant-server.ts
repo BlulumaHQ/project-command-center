@@ -78,6 +78,21 @@ const TOOLS = [
     },
   },
   {
+    name: "add_idea",
+    description: "把 Sony 隨口想到的點子／之後想做的事記進「隨手記」。Sony 說「幫我記一下」「我想到一個點子」時用這個。",
+    input_schema: {
+      type: "object",
+      properties: {
+        body: { type: "string" },
+        tag: {
+          type: "string",
+          description: "Bluluma / Sonykun / SwiftLift / SwiftSite / Night Clerk / HQ / 個人，看不出來就省略",
+        },
+      },
+      required: ["body"],
+    },
+  },
+  {
     name: "find_clients",
     description: "查客戶：名稱、聯絡人、服務、帳號在哪、續約日。query 可留空列出全部。",
     input_schema: { type: "object", properties: { query: { type: "string" } } },
@@ -104,6 +119,7 @@ type ToolInput = {
   body?: unknown;
   query?: unknown;
   brand?: unknown;
+  tag?: unknown;
 };
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
@@ -197,6 +213,16 @@ async function runTool(
         .insert({ id: crypto.randomUUID(), body, project_id: str(input.project_id) || null });
       if (error) throw new Error(error.message);
       actions.push("存進收件匣");
+      return { ok: true };
+    }
+    case "add_idea": {
+      const body = str(input.body);
+      if (!body) throw new Error("內容是空的");
+      const { error } = await db
+        .from("pcc_ideas")
+        .insert({ body, tag: str(input.tag) || null });
+      if (error) throw new Error(error.message);
+      actions.push("記進隨手記");
       return { ok: true };
     }
     case "find_clients": {

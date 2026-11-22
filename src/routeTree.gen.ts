@@ -16,6 +16,8 @@ import { Route as LearnRouteImport } from './routes/learn'
 import { Route as LogRouteImport } from './routes/log'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MoneyRouteImport } from './routes/money'
+import { Route as MonitorRouteImport } from './routes/monitor'
+import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as TasksRouteImport } from './routes/tasks'
@@ -57,6 +59,16 @@ const LoginRoute = LoginRouteImport.update({
 const MoneyRoute = MoneyRouteImport.update({
   id: '/money',
   path: '/money',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonitorRoute = MonitorRouteImport.update({
+  id: '/monitor',
+  path: '/monitor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -103,6 +115,8 @@ export interface FileRoutesByFullPath {
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
   '/money': typeof MoneyRoute
+  '/monitor': typeof MonitorRoute
+  '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
@@ -119,6 +133,8 @@ export interface FileRoutesByTo {
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
   '/money': typeof MoneyRoute
+  '/monitor': typeof MonitorRoute
+  '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
@@ -136,6 +152,8 @@ export interface FileRoutesById {
   '/log': typeof LogRoute
   '/login': typeof LoginRoute
   '/money': typeof MoneyRoute
+  '/monitor': typeof MonitorRoute
+  '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/tasks': typeof TasksRoute
@@ -154,6 +172,8 @@ export interface FileRouteTypes {
     | '/log'
     | '/login'
     | '/money'
+    | '/monitor'
+    | '/notes'
     | '/pricing'
     | '/projects'
     | '/tasks'
@@ -170,6 +190,8 @@ export interface FileRouteTypes {
     | '/log'
     | '/login'
     | '/money'
+    | '/monitor'
+    | '/notes'
     | '/pricing'
     | '/projects'
     | '/tasks'
@@ -186,6 +208,8 @@ export interface FileRouteTypes {
     | '/log'
     | '/login'
     | '/money'
+    | '/monitor'
+    | '/notes'
     | '/pricing'
     | '/projects'
     | '/tasks'
@@ -203,6 +227,8 @@ export interface RootRouteChildren {
   LogRoute: typeof LogRoute
   LoginRoute: typeof LoginRoute
   MoneyRoute: typeof MoneyRoute
+  MonitorRoute: typeof MonitorRoute
+  NotesRoute: typeof NotesRoute
   PricingRoute: typeof PricingRoute
   ProjectsRoute: typeof ProjectsRoute
   TasksRoute: typeof TasksRoute
@@ -261,6 +287,20 @@ declare module '@tanstack/react-router' {
       path: '/money'
       fullPath: '/money'
       preLoaderRoute: typeof MoneyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monitor': {
+      id: '/monitor'
+      path: '/monitor'
+      fullPath: '/monitor'
+      preLoaderRoute: typeof MonitorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -323,6 +363,8 @@ const rootRouteChildren: RootRouteChildren = {
   LogRoute: LogRoute,
   LoginRoute: LoginRoute,
   MoneyRoute: MoneyRoute,
+  MonitorRoute: MonitorRoute,
+  NotesRoute: NotesRoute,
   PricingRoute: PricingRoute,
   ProjectsRoute: ProjectsRoute,
   TasksRoute: TasksRoute,
