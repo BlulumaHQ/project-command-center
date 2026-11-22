@@ -10,6 +10,13 @@ import type { Director } from "@/lib/board";
 
 const TURN = 3; // seconds each director speaks
 
+/** Name-plate label: keep short names, use the surname for long ones (e.g. Alex Hormozi → Hormozi). */
+function shortName(name: string) {
+  if (name.length <= 11) return name;
+  const parts = name.split(" ");
+  return parts.length > 1 ? parts.at(-1)! : name;
+}
+
 function css(n: number) {
   const on = (100 / n).toFixed(2);
   const fade = Math.max(0, 100 / n - 4).toFixed(2);
@@ -126,108 +133,139 @@ export function BoardRoom({
     <section className="panel overflow-hidden p-0" aria-label="董事會會議室動畫">
       <style>{css(list.length)}</style>
       <div ref={scroller} className="overflow-x-auto overscroll-x-contain sm:overflow-visible">
-      <svg className="bdr block h-auto w-full min-w-[600px] sm:min-w-0" viewBox="0 0 800 300" role="img">
-        <title>Bluluma 董事會會議室</title>
-        {/* room */}
-        <rect width={800} height={150} fill="#1E293B" />
-        <rect y={150} width={800} height={150} fill="#273449" />
-        <rect y={146} width={800} height={5} fill="#0F172A" />
-        {/* window wall */}
-        <g opacity={0.9}>
-          {[0, 1, 2, 3].map((k) => (
-            <g key={k} transform={`translate(${70 + k * 175},18)`}>
-              <rect
-                width={135}
-                height={70}
-                rx={4}
-                fill="#0B1220"
-                stroke="#475569"
-                strokeWidth={2}
-              />
+        <svg
+          className="bdr block h-auto w-full min-w-[600px] sm:min-w-0"
+          viewBox="0 0 800 300"
+          role="img"
+        >
+          <title>Bluluma 董事會會議室</title>
+          {/* room */}
+          <rect width={800} height={150} fill="#1E293B" />
+          <rect y={150} width={800} height={150} fill="#273449" />
+          <rect y={146} width={800} height={5} fill="#0F172A" />
+          {/* window wall */}
+          <g opacity={0.9}>
+            {[0, 1, 2, 3].map((k) => (
+              <g key={k} transform={`translate(${70 + k * 175},18)`}>
+                <rect
+                  width={135}
+                  height={70}
+                  rx={4}
+                  fill="#0B1220"
+                  stroke="#475569"
+                  strokeWidth={2}
+                />
+                <path
+                  d={`M8,70 V${44 - k * 3} h14 V${34 + k * 2} h16 V70 M46,70 V${22 + k * 4} h18 V70 M72,70 V${38 - k * 2} h12 V${26 + k} h14 V70 M104,70 V${42 - k} h22 V70`}
+                  fill="#1E3A8A"
+                />
+                {[18, 52, 80, 110].map((wx) => (
+                  <rect key={wx} x={wx} y={48} width={3} height={3} fill="#FDE68A" opacity={0.8} />
+                ))}
+              </g>
+            ))}
+          </g>
+          {/* pendant lamps */}
+          {[260, 540].map((lx) => (
+            <g key={lx}>
+              <line x1={lx} y1={0} x2={lx} y2={30} stroke="#64748B" strokeWidth={2} />
               <path
-                d={`M8,70 V${44 - k * 3} h14 V${34 + k * 2} h16 V70 M46,70 V${22 + k * 4} h18 V70 M72,70 V${38 - k * 2} h12 V${26 + k} h14 V70 M104,70 V${42 - k} h22 V70`}
-                fill="#1E3A8A"
+                d={`M${lx - 22},44 L${lx - 10},30 L${lx + 10},30 L${lx + 22},44 Z`}
+                fill="#F5B70A"
               />
-              {[18, 52, 80, 110].map((wx) => (
-                <rect key={wx} x={wx} y={48} width={3} height={3} fill="#FDE68A" opacity={0.8} />
-              ))}
+              <ellipse
+                className="bdr-lamp"
+                cx={lx}
+                cy={150}
+                rx={120}
+                ry={40}
+                fill="#FDE68A"
+                opacity={0.08}
+              />
             </g>
           ))}
-        </g>
-        {/* pendant lamps */}
-        {[260, 540].map((lx) => (
-          <g key={lx}>
-            <line x1={lx} y1={0} x2={lx} y2={30} stroke="#64748B" strokeWidth={2} />
-            <path
-              d={`M${lx - 22},44 L${lx - 10},30 L${lx + 10},30 L${lx + 22},44 Z`}
-              fill="#F5B70A"
-            />
-            <ellipse
-              className="bdr-lamp"
-              cx={lx}
-              cy={150}
-              rx={120}
-              ry={40}
-              fill="#FDE68A"
-              opacity={0.08}
-            />
-          </g>
-        ))}
 
-        {list.map((d, i) => (
-          <Seat
-            key={d.id}
-            d={d}
-            x={pos[i]!.x}
-            y={pos[i]!.y}
-            i={i}
-            n={list.length}
-            on={isOn(d.id)}
-            onToggle={() => onToggle(d.id)}
-          />
-        ))}
+          {list.map((d, i) => (
+            <Seat
+              key={d.id}
+              d={d}
+              x={pos[i]!.x}
+              y={pos[i]!.y}
+              i={i}
+              n={list.length}
+              on={isOn(d.id)}
+              onToggle={() => onToggle(d.id)}
+            />
+          ))}
 
-        {/* table */}
-        <ellipse cx={400} cy={214} rx={330} ry={52} fill="#0F172A" opacity={0.35} />
-        <ellipse cx={400} cy={206} rx={330} ry={50} fill="#8B5E3C" />
-        <ellipse cx={400} cy={200} rx={322} ry={44} fill="#A47148" />
-        <ellipse cx={400} cy={200} rx={180} ry={20} fill="#B98557" opacity={0.6} />
-        <text
-          x={400}
-          y={194}
-          textAnchor="middle"
-          fontSize={11}
-          fontWeight={800}
-          letterSpacing={6}
-          fill="#8B5E3C"
-        >
-          BLULUMA BOARD
-        </text>
-        {/* name plates */}
-        {list.map((d, i) => {
-          const x = 400 + (pos[i]!.x - 400) * 0.92;
-          return (
-            <g key={d.id} transform={`translate(${x},${212})`} opacity={isOn(d.id) ? 1 : 0.35}>
-              <rect x={-58} y={-13} width={116} height={24} rx={4} fill="#F8FAFC" />
-              <rect x={-58} y={-13} width={5} height={24} rx={2} fill={d.color} />
-              <text textAnchor="middle" x={3} y={4} fontSize={13} fontWeight={700} fill="#0F172A">
-                {d.name}
-              </text>
-            </g>
-          );
-        })}
-        {/* speech bubbles on top so neighbours never cover them */}
-        {list.map((d, i) =>
-          isOn(d.id) ? <Bubble key={d.id} d={d} x={pos[i]!.x} y={pos[i]!.y} i={i} /> : null,
-        )}
-        {/* your chair */}
-        <g transform="translate(400,282)">
-          <rect x={-46} y={-26} width={92} height={40} rx={14} fill="#F5B70A" />
-          <text textAnchor="middle" y={0} fontSize={14} fontWeight={800} fill="#1E293B">
-            主席 · 你
+          {/* table */}
+          <ellipse cx={400} cy={214} rx={330} ry={52} fill="#0F172A" opacity={0.35} />
+          <ellipse cx={400} cy={206} rx={330} ry={50} fill="#8B5E3C" />
+          <ellipse cx={400} cy={200} rx={322} ry={44} fill="#A47148" />
+          <ellipse cx={400} cy={200} rx={180} ry={20} fill="#B98557" opacity={0.6} />
+          <text
+            x={400}
+            y={194}
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={800}
+            letterSpacing={6}
+            fill="#8B5E3C"
+          >
+            BLULUMA BOARD
           </text>
-        </g>
-      </svg>
+          {/* name plates: short names, width fitted to seat spacing so they never overlap */}
+          {list.map((d, i) => {
+            const gap = list.length > 1 ? (540 / (list.length - 1)) * 0.92 : 140;
+            const w = Math.min(120, gap - 12);
+            const x = 400 + (pos[i]!.x - 400) * 0.92;
+            return (
+              <g key={d.id} transform={`translate(${x},${214})`} opacity={isOn(d.id) ? 1 : 0.35}>
+                <rect
+                  x={-w / 2}
+                  y={-12}
+                  width={w}
+                  height={24}
+                  rx={12}
+                  fill="#0F172A"
+                  opacity={0.82}
+                />
+                <rect
+                  x={-w / 2}
+                  y={-12}
+                  width={w}
+                  height={24}
+                  rx={12}
+                  fill="none"
+                  stroke={d.color}
+                  strokeWidth={1.5}
+                />
+                <text
+                  textAnchor="middle"
+                  x={0}
+                  y={4.5}
+                  fontSize={12}
+                  fontWeight={700}
+                  letterSpacing={0.2}
+                  fill="#F8FAFC"
+                >
+                  {shortName(d.name)}
+                </text>
+              </g>
+            );
+          })}
+          {/* speech bubbles on top so neighbours never cover them */}
+          {list.map((d, i) =>
+            isOn(d.id) ? <Bubble key={d.id} d={d} x={pos[i]!.x} y={pos[i]!.y} i={i} /> : null,
+          )}
+          {/* your chair */}
+          <g transform="translate(400,282)">
+            <rect x={-46} y={-26} width={92} height={40} rx={14} fill="#F5B70A" />
+            <text textAnchor="middle" y={0} fontSize={14} fontWeight={800} fill="#1E293B">
+              主席 · 你
+            </text>
+          </g>
+        </svg>
       </div>
     </section>
   );
