@@ -13,15 +13,18 @@ import {
   LogOut,
   Menu,
   NotebookPen,
+  ScanFace,
   Sun,
   Tag,
   Users,
 } from "lucide-react";
-import { useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/lib/supabase";
 import { TOOLS } from "@/lib/tools";
+import { passkeySupported, registerFaceId } from "@/lib/passkey";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -72,6 +75,34 @@ function useSignOut() {
       if (!error) await navigate({ to: "/login", replace: true });
     },
   };
+}
+
+function FaceIdSetup() {
+  const [busy, setBusy] = useState(false);
+  const [supported, setSupported] = useState(false);
+  useEffect(() => setSupported(passkeySupported()), []);
+  if (!supported) return null;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await registerFaceId();
+          toast.success("Face ID 設定好了，下次直接刷臉登入");
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Face ID 設定失敗");
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60"
+    >
+      <ScanFace className="h-4 w-4" />
+      設定 Face ID 登入
+    </button>
+  );
 }
 
 function Logo({ className }: { className?: string }) {
@@ -157,11 +188,14 @@ export function Sidebar() {
         <NavLinks />
       </nav>
       <AppLinks />
+      <div className="mt-auto">
+        <FaceIdSetup />
+      </div>
       <button
         type="button"
         onClick={signOut}
         disabled={busy}
-        className="mt-auto flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60"
+        className=" flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60"
       >
         <LogOut className="h-4 w-4" />
         登出
@@ -232,6 +266,7 @@ export function MobileTabBar() {
           <div className="space-y-5 px-2">
             <NavLinks onNavigate={() => setOpen(false)} />
             <AppLinks />
+            <FaceIdSetup />
             <button
               type="button"
               onClick={signOut}
