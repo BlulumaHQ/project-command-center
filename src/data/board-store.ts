@@ -3,12 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import type { Director } from "@/lib/board";
+import { GUEST_ID, GUEST_POOL, type Director } from "@/lib/board";
 
 export interface Minutes {
   round1: { id: string; verdict: string; points: string[]; ask: string }[];
   roast: { from: string; to: string; line: string }[];
   summary: { consensus: string[]; split: string[]; chair: string; next: string };
+  /** Who sat in the 神秘嘉賓 seat (round1/roast use id "guest"). */
+  guest?: { id: string; name: string; focus: string; reason: string };
 }
 export interface BoardTurn {
   question: string;
@@ -32,16 +34,23 @@ async function callBoard(
   directors: Director[],
   history: BoardTurn[],
 ): Promise<Minutes> {
+  const withGuest = directors.some((d) => d.id === GUEST_ID);
+  // Keep the same guest for follow-ups in one meeting.
+  const prevGuest = [...history].reverse().find((t) => t.minutes.guest)?.minutes.guest?.id;
   const { data, error } = await supabase.functions.invoke("board-meeting", {
     body: {
       question,
-      directors: directors.map(({ id, name, focus, lens, asks }) => ({
-        id,
-        name,
-        focus,
-        lens,
-        asks,
-      })),
+      guestPool: withGuest ? GUEST_POOL : [],
+      ...(withGuest && prevGuest ? { guestId: prevGuest } : {}),
+      directors: directors
+        .filter((d) => d.id !== GUEST_ID)
+        .map(({ id, name, focus, lens, asks }) => ({
+          id,
+          name,
+          focus,
+          lens,
+          asks,
+        })),
       history,
     },
   });
@@ -68,6 +77,7 @@ async function callBoard(
       chair: minutes.summary.chair ?? "",
       next: minutes.summary.next ?? "",
     },
+    ...(minutes.guest ? { guest: minutes.guest } : {}),
   };
 }
 

@@ -26,6 +26,8 @@ export const Route = createFileRoute("/board")({
 });
 
 const byId = (id: string): Director | undefined => DIRECTORS.find((d) => d.id === id);
+const nameOf = (id: string, m: BoardTurn["minutes"]) =>
+  id === "guest" && m.guest ? m.guest.name : (byId(id)?.name ?? id);
 
 const EXAMPLE_PROMPTS = [
   "例如：明年要把 recurring revenue 拉到總營收的 50%，應該優先投資 AI 自動化、white-label 合作夥伴，還是高端品牌專案？",
@@ -44,19 +46,25 @@ function Minutes({ turn }: { turn: BoardTurn }) {
       <div className="grid gap-3 sm:grid-cols-2">
         {m.round1.map((r) => {
           const d = byId(r.id);
+          const g = r.id === "guest" ? m.guest : undefined;
           return (
             <article key={r.id} className="panel p-4">
               <div className="flex items-center gap-2.5">
                 <RobotAvatar id={r.id} size={40} className="shrink-0" />
                 <div className="min-w-0">
-                  <h3 className="truncate text-sm font-semibold">{d?.name ?? r.id}</h3>
+                  <h3 className="truncate text-sm font-semibold">
+                    {g ? `神秘嘉賓 · ${g.name}` : (d?.name ?? r.id)}
+                  </h3>
                   {d && (
                     <p className="text-xs font-medium" style={{ color: d.color }}>
-                      {d.focus}
+                      {g?.focus ?? d.focus}
                     </p>
                   )}
                 </div>
               </div>
+              {g?.reason && (
+                <p className="mt-2 text-xs text-muted-foreground">邀請原因：{g.reason}</p>
+              )}
               <p className="mt-3 font-semibold leading-snug">{r.verdict}</p>
               <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-muted-foreground">
                 {r.points.map((p, i) => (
@@ -81,7 +89,7 @@ function Minutes({ turn }: { turn: BoardTurn }) {
                 <RobotAvatar id={r.from} size={32} className="shrink-0" />
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    {byId(r.from)?.name ?? r.from} → {byId(r.to)?.name ?? r.to}
+                    {nameOf(r.from, m)} → {nameOf(r.to, m)}
                   </p>
                   <p className="mt-0.5 leading-relaxed">{r.line}</p>
                 </div>
@@ -93,7 +101,9 @@ function Minutes({ turn }: { turn: BoardTurn }) {
 
       <section className="panel space-y-3 border-primary/40 p-4">
         <h3 className="text-sm font-semibold">🧑‍⚖️ 主席總結</h3>
-        {m.summary.chair && <p className="text-sm leading-relaxed">{m.summary.chair}</p>}
+        {m.summary.chair && (
+          <p className="whitespace-pre-line text-sm leading-relaxed">{m.summary.chair}</p>
+        )}
         {m.summary.consensus.length > 0 && (
           <div>
             <p className="text-xs font-medium text-muted-foreground">✅ 共識</p>
@@ -144,6 +154,15 @@ function BoardPage() {
     });
   };
   const seated = DIRECTORS.filter((d) => isOn(d.id));
+  // Reveal today's mystery guest in the boardroom once a meeting has one.
+  const guest = active
+    ? [...active.turns].reverse().find((t) => t.minutes.guest)?.minutes.guest
+    : undefined;
+  const roomDirectors = guest
+    ? DIRECTORS.map((d) =>
+        d.id === "guest" ? { ...d, name: guest.name, bubble: guest.focus.slice(0, 8) } : d,
+      )
+    : DIRECTORS;
 
   const start = () => {
     const question = topic.trim();
@@ -184,7 +203,7 @@ function BoardPage() {
         )}
       </div>
 
-      <BoardRoom directors={DIRECTORS} picked={picked} onToggle={toggle} />
+      <BoardRoom directors={roomDirectors} picked={picked} onToggle={toggle} />
 
       {active && (
         <div className="space-y-6">
@@ -210,9 +229,7 @@ function BoardPage() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) start();
           }}
-          placeholder={
-            active ? "例如：那 Developer 應該定多少？" : examplePrompt
-          }
+          placeholder={active ? "例如：那 Developer 應該定多少？" : examplePrompt}
         />
         {busy ? (
           <div className="flex h-11 items-center justify-center gap-2 rounded-xl bg-muted text-sm">

@@ -218,6 +218,40 @@ const robots: Record<string, { bg: string; art: ReactNode }> = {
       </>
     ),
   },
+  munger: {
+    bg: "#E8ECF1",
+    art: (
+      <>
+        <rect x="-36" y="-32" width="72" height="66" rx="16" fill="#475569" />
+        <rect x="-30" y="-40" width="60" height="10" rx="5" fill="#CBD5E1" />
+        <circle cx="-14" cy="-2" r="11" fill="#F1F5F9" stroke="#0F172A" strokeWidth="4" />
+        <circle cx="14" cy="-2" r="11" fill="#F1F5F9" stroke="#0F172A" strokeWidth="4" />
+        <line x1="-3" y1="-2" x2="3" y2="-2" stroke="#0F172A" strokeWidth="3" />
+        <circle cx="-14" cy="-1" r="3.5" fill="#0F172A" />
+        <circle cx="14" cy="-1" r="3.5" fill="#0F172A" />
+        <path d="M-10,20 L10,20" stroke="#E2E8F0" strokeWidth="3" strokeLinecap="round" />
+        <rect x="30" y="8" width="20" height="24" rx="2" fill="#B91C1C" />
+        <rect x="33" y="8" width="3" height="24" fill="#7F1D1D" />
+        <path d="M38,16 l6,0 m-6,5 l6,0" stroke="#FECACA" strokeWidth="1.5" />
+      </>
+    ),
+  },
+  guest: {
+    bg: "#EFE7FD",
+    art: (
+      <>
+        <rect x="-36" y="-30" width="72" height="64" rx="18" fill="#7C3AED" />
+        <rect x="-22" y="-62" width="44" height="30" rx="4" fill="#1E1B4B" />
+        <rect x="-34" y="-36" width="68" height="7" rx="3.5" fill="#1E1B4B" />
+        <rect x="-22" y="-42" width="44" height="5" fill="#F5B70A" />
+        <rect x="-28" y="-14" width="56" height="22" rx="11" fill="#2E1065" />
+        <text x="0" y="5" textAnchor="middle" fontSize="20" fontWeight="900" fill="#FDE68A">? ?</text>
+        <path d="M-8,20 Q0,25 8,20" fill="none" stroke="#DDD6FE" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="-31" cy="12" r="3" fill="#C4B5FD" />
+        <circle cx="31" cy="12" r="3" fill="#C4B5FD" />
+      </>
+    ),
+  },
 };
 
 /** Generic fallback so a new agent added in Supabase still gets a face. */
