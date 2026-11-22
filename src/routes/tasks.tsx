@@ -5,7 +5,7 @@ import { useStore } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { DuePicker, EditableTitle, StatusSelect } from "@/components/TaskControls";
-import { emptyLabel, filterCounts, filterLabel, filterTasks, matchesFilter, storedTaskFilter, vancouverDate, type TableTask, type TaskFilter, type TaskStatus } from "@/data/tasks";
+import { emptyLabel, filterCounts, filterLabel, filterTasks, matchesFilter, storedTaskFilter, taskStatusLabel, vancouverDate, type TableTask, type TaskFilter, type TaskStatus } from "@/data/tasks";
 import { formatDate } from "@/data/mapping";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ function TasksPage() {
   const [projectFilter, setProjectFilter] = useState("");
   const [addProject, setAddProject] = useState("");
   const [title, setTitle] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const addRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -75,8 +76,22 @@ function TasksPage() {
   const pinOrder = new Map(pinned.map((id, i) => [id, i]));
   list.sort((a, b) => (pinOrder.get(a.id) ?? Infinity) - (pinOrder.get(b.id) ?? Infinity));
 
-  const pickFilter = (f: TaskFilter) => { setFilter(f); setPinned([]); localStorage.setItem(FILTER_KEY, f); };
-  const pickProject = (id: string) => { setProjectFilter(id); setPinned([]); localStorage.setItem(PROJECT_KEY, id); };
+  const pickFilter = (f: TaskFilter) => { setFilter(f); setPinned([]); setSelected(new Set()); localStorage.setItem(FILTER_KEY, f); };
+  const pickProject = (id: string) => { setProjectFilter(id); setPinned([]); setSelected(new Set()); localStorage.setItem(PROJECT_KEY, id); };
+  const visibleSelected = list.filter((t) => selected.has(t.id));
+  const allSelected = list.length > 0 && visibleSelected.length === list.length;
+  const toggle = (id: string) => setSelected((cur) => { const next = new Set(cur); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(list.map((t) => t.id)));
+  const bulkStatus = (status: TaskStatus) => {
+    const prev = visibleSelected.map((t) => [t.id, t.status] as const);
+    if (!prev.length) return;
+    prev.forEach(([id]) => store.setTaskStatus(id, status));
+    setSelected(new Set());
+    toast(`${prev.length} 項改成「${taskStatusLabel[status]}」`, {
+      duration: 8000,
+      action: { label: "復原", onClick: () => prev.forEach(([id, s]) => store.setTaskStatus(id, s)) },
+    });
+  };
   const changeStatus = (t: TableTask, status: TaskStatus) => {
     const prev = t.status;
     store.setTaskStatus(t.id, status);
@@ -133,11 +148,12 @@ function TasksPage() {
           <div className="panel hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="border-b border-border text-left text-xs text-muted-foreground">
-                <tr><th className="px-4 py-3 font-medium">專案</th><th className="px-4 py-3 font-medium">待辦</th><th className="px-4 py-3 font-medium">狀態</th><th className="px-4 py-3 font-medium">期限</th><th className="px-4 py-3 font-medium">更新</th></tr>
+                <tr><th className="w-10 px-4 py-3"><input type="checkbox" aria-label="全選" checked={allSelected} onChange={toggleAll} className="h-4 w-4 cursor-pointer accent-primary" /></th><th className="px-4 py-3 font-medium">專案</th><th className="px-4 py-3 font-medium">待辦</th><th className="px-4 py-3 font-medium">狀態</th><th className="px-4 py-3 font-medium">期限</th><th className="px-4 py-3 font-medium">更新</th></tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {list.map((t) => (
-                  <tr key={t.id} className={cn("h-11 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
+                  <tr key={t.id} className={cn("h-11 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent", selected.has(t.id) && "bg-primary/5")}>
+                    <td className="px-4 py-2 align-top"><input type="checkbox" aria-label={`選取：${t.title}`} checked={selected.has(t.id)} onChange={() => toggle(t.id)} className="mt-2.5 h-4 w-4 cursor-pointer accent-primary" /></td>
                     <td className="px-4 py-2 align-top"><Link to="/project/$id" params={{ id: t.projectId }} className="text-muted-foreground hover:text-foreground hover:underline">{t.projectName}</Link></td>
                     <td className="px-4 py-2 align-top">
                       <EditableTitle title={t.title} done={t.status === "done"} onSave={(v) => store.renameTask(t.id, v)} />
@@ -153,7 +169,9 @@ function TasksPage() {
           </div>
           <ul className="space-y-2 sm:hidden">
             {list.map((t) => (
-              <li key={t.id} className={cn("panel p-3 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent")}>
+              <li key={t.id} className={cn("panel flex gap-3 p-3 transition-colors duration-700 motion-reduce:transition-none", highlighted.includes(t.id) && "bg-accent", selected.has(t.id) && "ring-2 ring-primary/40")}>
+                <input type="checkbox" aria-label={`選取：${t.title}`} checked={selected.has(t.id)} onChange={() => toggle(t.id)} className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-primary" />
+                <div className="min-w-0 flex-1">
                 <EditableTitle title={t.title} done={t.status === "done"} onSave={(v) => store.renameTask(t.id, v)} />
                 {t.note && <div className="text-xs text-muted-foreground">{t.note}</div>}
                 <Link to="/project/$id" params={{ id: t.projectId }} className="mt-1 block text-xs text-muted-foreground">{t.projectName}</Link>
@@ -161,10 +179,23 @@ function TasksPage() {
                   <StatusSelect value={t.status} onChange={(s) => changeStatus(t, s)} />
                   <DuePicker value={t.dueDate} onChange={(d) => store.setTaskDue(t.id, d)} />
                 </div>
+                </div>
               </li>
             ))}
           </ul>
         </>
+      )}
+
+      {visibleSelected.length > 0 && (
+        <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+76px)] z-40 mx-auto flex max-w-xl items-center gap-2 rounded-2xl border border-border bg-card p-2 pl-4 shadow-lg md:bottom-6 md:left-64">
+          <span className="text-sm font-medium tabular-nums">已選 {visibleSelected.length} 項</span>
+          <select aria-label="批次改狀態" value="" onChange={(e) => { if (e.target.value) bulkStatus(e.target.value as TaskStatus); }}
+            className="ml-auto h-10 rounded-xl border border-input bg-background px-3 text-sm">
+            <option value="">改狀態…</option>
+            {(Object.keys(taskStatusLabel) as TaskStatus[]).map((st) => <option key={st} value={st}>{taskStatusLabel[st]}</option>)}
+          </select>
+          <Button variant="ghost" className="h-10" onClick={() => setSelected(new Set())}>取消選取</Button>
+        </div>
       )}
     </div>
   );

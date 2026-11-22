@@ -12,6 +12,7 @@ const statusChip: Record<TaskStatus, string> = {
   doing: "bg-st-progress-bg text-st-progress-fg",
   waiting: "bg-st-waiting-bg text-st-waiting-fg",
   done: "bg-st-almost-bg text-st-almost-fg",
+  cancelled: "bg-muted text-muted-foreground line-through",
 };
 
 export function StatusSelect({ value, onChange, className }: { value: TaskStatus; onChange: (s: TaskStatus) => void; className?: string }) {

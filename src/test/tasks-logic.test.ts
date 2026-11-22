@@ -40,7 +40,7 @@ describe("/tasks filters", () => {
   });
   it("今天完成 uses Vancouver day of done_at", () => { expect(filterTasks(list, "doneToday", today).map((x) => x.id)).toEqual(["doneToday"]); });
   it("counts each filter and respects the project filter", () => {
-    expect(filterCounts(list, today)).toEqual({ next: 4, later: 0, doing: 1, waiting: 1, due: 1, doneToday: 1 });
+    expect(filterCounts(list, today)).toEqual({ next: 4, later: 0, doing: 1, waiting: 1, due: 1, doneToday: 1, cancelled: 0 });
     expect(filterTasks(list, "next", today, "p2").map((x) => x.id)).toEqual(["waiting"]);
   });
   it("marks overdue red and within 7 days orange", () => {

@@ -31,7 +31,7 @@ interface FocusRow { key: string; title: string; projectId?: string | undefined;
 
 /** Fallback when Atlas hasn't written today's plan: overdue → due soon → in progress → next. */
 function autoFocus(tasks: TableTask[], today: string): TableTask[] {
-  const open = tasks.filter((t) => t.status !== "done" && t.status !== "waiting" && (t.grp === "next" || t.dueDate || t.status === "doing"));
+  const open = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled" && t.status !== "waiting" && (t.grp === "next" || t.dueDate || t.status === "doing"));
   return sortTasks(open, today).slice(0, 6);
 }
 

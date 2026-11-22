@@ -25,7 +25,8 @@ export function formatDate(value: string | null | undefined, time = false) {
 }
 
 export function mapProject(row: ProjectRow, taskRows: TaskRow[]): Project {
-  const tasks: Task[] = taskRows.filter((t) => t.project_id === row.id).map((t) => {
+  // Cancelled tasks are dropped from the project checklist (they still show under 待辦表 → 已取消).
+  const tasks: Task[] = taskRows.filter((t) => t.project_id === row.id && taskStatus(t) !== "cancelled").map((t) => {
     const status = taskStatus(t);
     return { id: t.id, title: t.title, note: t.note ?? undefined, group: status === "done" ? "done" : t.grp, done: status === "done", status, dueDate: t.due_date, doneAt: t.done_at };
   });

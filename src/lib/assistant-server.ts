@@ -50,7 +50,7 @@ const TOOLS = [
       type: "object",
       properties: {
         task_id: { type: "string" },
-        status: { type: "string", enum: ["todo", "doing", "waiting", "done"] },
+        status: { type: "string", enum: ["todo", "doing", "waiting", "done", "cancelled"] },
       },
       required: ["task_id", "status"],
     },
@@ -143,7 +143,7 @@ async function runTool(
       let q = db
         .from("pcc_tasks")
         .select("id,project_id,title,status,grp,due_date")
-        .neq("status", "done")
+        .not("status", "in", "(done,cancelled)")
         .order("sort")
         .limit(80);
       if (str(input.project_id)) q = q.eq("project_id", str(input.project_id));
@@ -173,7 +173,7 @@ async function runTool(
       const status = str(input.status);
       const patch: Record<string, unknown> = {
         status,
-        done: status === "done",
+        done: status === "done" || status === "cancelled",
         done_at: status === "done" ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       };

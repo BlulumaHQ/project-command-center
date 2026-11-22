@@ -86,7 +86,8 @@ export function useStore() {
 
   const setTaskStatus = (taskId: string, status: TaskStatus) => {
     const done = status === "done";
-    patchTask(taskId, { status, done, done_at: done ? new Date().toISOString() : null }, { status });
+    // Cancelled counts as closed (done = true) so open counts ignore it, but gets no done_at.
+    patchTask(taskId, { status, done: done || status === "cancelled", done_at: done ? new Date().toISOString() : null }, { status });
   };
 
   return {
