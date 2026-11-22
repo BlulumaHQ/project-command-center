@@ -41,7 +41,7 @@ export const NAV: NavItem[] = [
   { to: "/tasks", label: "任務", icon: ListChecks },
   { to: "/notes", label: "隨手記", icon: NotebookPen },
   { to: "/clients", label: "客戶", icon: Users },
-  { to: "/pricing", label: "價目表", icon: Tag },
+  { to: "/pricing", label: "價目表 · 報價", icon: Tag },
   { to: "/money", label: "財務", icon: CircleDollarSign },
   { to: "/team", label: "AI 團隊", icon: Bot },
   { to: "/board", label: "董事會", icon: Landmark },
