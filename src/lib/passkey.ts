@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 const FLAG = "hq_passkey_ready";
 
 export function passkeySupported() {
-  return typeof window !== "undefined" && typeof window.PublicKeyCredential === "function";
+  // Passkeys are bound to bluluma.com, so only offer Face ID on *.bluluma.com (not on preview URLs).
+  return typeof window !== "undefined" && typeof window.PublicKeyCredential === "function" && /(^|\.)bluluma\.com$/.test(window.location.hostname);
 }
 
 /** Remembered per device: this phone already registered a passkey. */
