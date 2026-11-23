@@ -4,6 +4,7 @@ import { Check, Copy, Search } from "lucide-react";
 import { requireSignedIn } from "@/lib/auth";
 import { useClients, usePrices, type PriceRow } from "@/data/hq2";
 import { QuoteBuilder } from "@/components/QuoteBuilder";
+import { SalesKitPanel } from "@/components/SalesKitPanel";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { MASK, RevealButton } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,13 @@ const TABS = [
     label: "SwiftSite",
     cur: "CAD",
     note: "價格跟 swiftsite.ca 一致。不給 partner。Hosting & care 必須綁。",
+    partner: false,
+  },
+  {
+    id: "nightclerk",
+    label: "NightClerk",
+    cur: "CAD",
+    note: "Shopify 自動化方案，價錢固定（不寫 from／起），細節看提案 PDF。",
     partner: false,
   },
   {
@@ -213,6 +221,8 @@ function PricingPage() {
         )}
       </div>
 
+      <SalesKitPanel brand={tab} />
+
       {mode === "quote" ? (
         <QuoteBuilder
           key={tab}
@@ -235,7 +245,11 @@ function PricingPage() {
           </label>
 
           {groups.length === 0 && (
-            <p className="text-sm text-muted-foreground">找不到符合的項目。</p>
+            <p className="text-sm text-muted-foreground">
+              {q.trim()
+                ? "找不到符合的項目。"
+                : "這間公司的價錢還沒放進價目表，先看上面的提案 PDF。"}
+            </p>
           )}
           {groups.map((g) => (
             <section key={g.cat} className="panel p-4 sm:p-5">

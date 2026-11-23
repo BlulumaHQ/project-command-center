@@ -179,10 +179,12 @@ def plan(brand, lang):
     bi = BRANDS[brand]["lang2"] == "bilingual"
     lang_kw = ("兩種語言的關鍵字研究，每個關鍵字對應一個頁面" if zh else "Keyword research in both languages — each matched to a page")
     second_pages = ("第二語言頁面，針對該語言的搜尋優化" if zh else "Second-language pages optimized for searches in that language")
-    ai = ("AI 搜尋準備：把你的商家資料設定好給 ChatGPT 和 AI 搜尋，加拿大一開放就認領商家檔案" if zh and BRANDS[brand]["currency"] == "CAD"
-          else "AI 搜尋準備：把你的商家資料設定好給 ChatGPT 和 AI 搜尋" if zh
-          else "AI Search Readiness: your business info set up for ChatGPT and AI search — profile claimed as soon as it opens in Canada" if BRANDS[brand]["currency"] == "CAD"
-          else "AI Search Readiness: your business info set up for ChatGPT and AI search")
+    if p == "premium":
+        ai = ("AI 搜尋優化：讓 ChatGPT、Google AI 找得到並推薦你，每月檢查 AI 能見度" if zh else
+              "AI Search Optimization: answer-first content, FAQ and schema for ChatGPT and Google AI, plus a monthly AI visibility check")
+    else:
+        ai = ("AI 搜尋優化：用問答式內容和 schema，讓 ChatGPT、Google AI 找得到並推薦你" if zh else
+              "AI Search Optimization: answer-first content, FAQ and schema so ChatGPT and Google AI can find and recommend you")
     audit_items = ([ "技術健檢：收錄、sitemap、速度、手機版、壞連結", "Google Search Console 和 Google 商家檔案檢查",
                      "競爭對手分析：現在誰排前面、為什麼", "Google Analytics 4 設定，追蹤點電話和表單", lang_kw, "修正 Google 搜尋結果裡的店名和描述"] if zh else
                    ["Technical health check: indexing, sitemap, speed, mobile, broken links", "Google Search Console & Google Business Profile review",
@@ -259,7 +261,8 @@ def pricing(brand, lang):
     cur = BRANDS[brand]["currency"]
     bi = BRANDS[brand]["lang2"] == "bilingual"
     lang_line = ("包含雙語 SEO" if bi else "包含第二語言 SEO") if zh else ("Bilingual SEO included" if bi else "Second-language SEO included")
-    ai = "AI 搜尋準備（ChatGPT 商家檔案）" if zh else "AI Search Readiness (ChatGPT business profile)"
+    ai = (("AI 搜尋優化 + 每月 AI 能見度報告" if zh else "AI Search Optimization + monthly AI visibility report") if p == "premium" else
+          ("AI 搜尋優化 (ChatGPT、Google AI)" if zh else "AI Search Optimization (ChatGPT, Google AI)"))
     if p == "standard":
         return dict(
             name="Standard 方案" if zh else "Standard Plan", sub="給準備好被 Google 找到的在地商家" if zh else "For local businesses ready to be found on Google",
