@@ -87,10 +87,10 @@ T = {
         ("Google Search Console", "Search performance", "Rankings, search terms, indexing and sitemap", "Settings → Users and permissions → Add user", "Full"),
         ("Google Analytics 4", "Website behaviour", "Visits, phone taps, form submissions", "Admin → Property access management → Add. No account yet? We’ll create one for you.", "Editor"),
         ("Website / CMS", "Your website editor", "On-page changes, structured data, new FAQ content", "Admin or collaborator login. Not needed if we built your site.", "Admin"),
-        ("Domain / DNS", "Only if needed", "Verifying Google tools, fixing redirects", "Usually handled together on a short call", "If needed"),
+        ("Domain / DNS", "Only if needed", "Verifying Google tools, fixing redirects", "We send you simple step-by-step instructions", "If needed"),
     ],
     nopw=("You never share passwords.", "You add us as a user, and you can remove access at any time. You stay the owner of every account."),
-    call=("One 15-minute setup call.", "Some Google accounts ask for a two-factor code. We book one short call to finish everything together."),
+    call=("No meetings needed.", "Some Google accounts ask for a two-factor code. We’ll text or email you when we need it — everything else is done by email."),
     kick="ALSO HELPFUL AT KICKOFF",
     kick_items=["Recent photos: exterior, signage, team, your work", "Current business hours, including holiday hours",
                 "The 3–5 services you want more customers for", "Any keywords your customers often mention",
@@ -147,10 +147,10 @@ T = {
         ("Google Search Console", "搜尋成效", "排名、搜尋字、收錄和 sitemap", "設定 → 使用者和權限 → 新增使用者", "完整"),
         ("Google Analytics 4", "網站行為", "瀏覽、點電話、表單送出", "管理 → 資源存取權管理 → 新增。還沒有帳號？我們幫你開。", "編輯者"),
         ("網站後台", "你的網站編輯器", "頁面修改、結構化資料、新的 FAQ 內容", "管理員或協作者帳號。網站是我們做的就不用。", "管理員"),
-        ("網域 / DNS", "需要時才用", "驗證 Google 工具、修正轉址", "通常在短短的通話中一起處理", "需要時"),
+        ("網域 / DNS", "需要時才用", "驗證 Google 工具、修正轉址", "我們會寄給你簡單的步驟說明", "需要時"),
     ],
     nopw=("你不用給我們密碼。", "你把我們加為使用者，隨時可以移除。每個帳號的擁有者都還是你。"),
-    call=("一通 15 分鐘的設定電話。", "有些 Google 帳號會要求雙重驗證碼，我們約一次短短的通話，一起設定完成。"),
+    call=("不用開會。", "有些 Google 帳號會要求雙重驗證碼，需要時我們傳簡訊或 email 給你，其他全部用 email 完成。"),
     kick="開始時也很有幫助的資料",
     kick_items=["最近的照片：外觀、招牌、團隊、作品", "目前的營業時間，包括假日時間", "你最想多接的 3–5 項服務",
                 "客人常提到的關鍵字", "問新客人：「你怎麼知道我們的？」", "你想拿下的服務區域或社區"],
@@ -222,8 +222,8 @@ def plan(brand, lang):
             ("02", "成長期" if zh else "Growth Phase", "第 1–3 個月" if zh else "Months 1–3", opt_items,
              ("你會拿到：", "每月進度報告，所有修改都直接改在你的網站上。") if zh else ("You receive:", "a monthly progress report, plus all changes made directly on your website.")),
             ("03", "持續成長" if zh else "Ongoing Growth", "第 4–12 個月 · 已包含" if zh else "Months 4–12 · included",
-             (["每月新增 2 個目標關鍵字", "每月 Google 商家檔案貼文", "競爭對手追蹤", "每季一次策略通話", "每月排名、流量監控和技術修正", "月報，含「競爭對手動態」"] if zh else
-              ["2 new target keywords added every month", "Monthly Google Business Profile posts", "Competitor watch", "Quarterly strategy call",
+             (["每月新增 2 個目標關鍵字", "每月 Google 商家檔案貼文", "競爭對手追蹤", "每季一份策略報告", "每月排名、流量監控和技術修正", "月報，含「競爭對手動態」"] if zh else
+              ["2 new target keywords added every month", "Monthly Google Business Profile posts", "Competitor watch", "Quarterly strategy report",
                "Monthly ranking, traffic monitoring and technical fixes", "Monthly report, incl. competitor watch"]),
              ("你保有：", "一整年持續累積的排名和客人。") if zh else ("You keep:", "a full year of rankings and leads that keep compounding.")),
         ]
@@ -271,8 +271,8 @@ def pricing(brand, lang):
             incl=(["稽核與設定 + 基準報告", "3 個月實際動手優化", "追蹤 10 個目標關鍵字", "白話月報", ai, "持續維護：每月新增 1 個目標關鍵字", lang_line] if zh else
                   ["Audit & Setup + Baseline Report", "3 months of hands-on optimization", "10 target keywords tracked", "Monthly plain-English report", ai,
                    "Ongoing Care: 1 new target keyword added every month", lang_line]),
-            steps=(["回信確認這份方案", "第一筆付款：$900", "15 分鐘帳號設定電話", "7 天內交基準報告"] if zh else
-                   ["Approve this proposal by reply email", "First payment — $900", "15-minute account setup call", "Baseline Report within 7 days"]),
+            steps=(["回信確認這份方案", "第一筆付款：$900", "用 email 完成帳號權限設定", "7 天內交基準報告"] if zh else
+                   ["Approve this proposal by reply email", "First payment — $900", "Account access set up by email", "Baseline Report within 7 days"]),
             addl=True)
     if p == "premium":
         return dict(
@@ -283,11 +283,11 @@ def pricing(brand, lang):
                   ("12 個月總計" if zh else "12-month total", "$4,480")],
             pay=("<b>付款：</b>簽約時付 $1,888。第 4–12 個月每月自動從信用卡扣 $288。想一次付清？整年 <b>$4,188</b>（省 $292）。" if zh else
                  "<b>Payment:</b> $1,888 at signing. Months 4–12 are charged automatically at $288/month to the card on file. Prefer one payment? Pay the full year upfront for <b>$4,188</b> (save $292)."),
-            incl=(["稽核與設定 + 基準報告", "追蹤 20 個目標關鍵字，第 4 個月起每月加 2 個", "每月 Google 商家檔案貼文", "競爭對手追蹤", "每季一次策略通話", ai, lang_line] if zh else
+            incl=(["稽核與設定 + 基準報告", "追蹤 20 個目標關鍵字，第 4 個月起每月加 2 個", "每月 Google 商家檔案貼文", "競爭對手追蹤", "每季一份策略報告", ai, lang_line] if zh else
                   ["Audit & Setup + Baseline Report", "20 target keywords, +2 every month from month 4", "Monthly Google Business Profile posts", "Competitor watch",
-                   "Quarterly strategy call", ai, lang_line]),
-            steps=(["回信確認這份方案", "簽 12 個月合約，付 $1,888", "15 分鐘帳號設定電話", "7 天內交基準報告"] if zh else
-                   ["Approve this proposal by reply email", "Sign the 12-month agreement — $1,888", "15-minute account setup call", "Baseline Report within 7 days"]),
+                   "Quarterly strategy report", ai, lang_line]),
+            steps=(["回信確認這份方案", "簽 12 個月合約，付 $1,888", "用 email 完成帳號權限設定", "7 天內交基準報告"] if zh else
+                   ["Approve this proposal by reply email", "Sign the 12-month agreement — $1,888", "Account access set up by email", "Baseline Report within 7 days"]),
             addl=True)
     return dict(
         name="在地 SEO 方案" if zh else "Local SEO Program", sub="給剛換新網站、準備接更多客人的在地商家" if zh else "For local businesses ready to be found on Google",
@@ -297,6 +297,6 @@ def pricing(brand, lang):
         incl=(["稽核與設定 + 基準報告", "3 個月實際動手優化", "追蹤 10 個目標關鍵字", "白話月報", "Google 商家檔案優化", ai, lang_line] if zh else
               ["Audit & Setup + Baseline Report", "3 months of hands-on optimization", "10 target keywords tracked", "Monthly plain-English report",
                "Google Business Profile optimization", ai, lang_line]),
-        steps=(["回覆我們的 email 確認", "第一筆付款：$499", "15 分鐘帳號設定電話", "7 天內交基準報告"] if zh else
-               ["Reply to our email to approve", "First payment — $499", "15-minute account setup call", "Baseline Report within 7 days"]),
+        steps=(["回覆我們的 email 確認", "第一筆付款：$499", "用 email 完成帳號權限設定", "7 天內交基準報告"] if zh else
+               ["Reply to our email to approve", "First payment — $499", "Account access set up by email", "Baseline Report within 7 days"]),
         addl=True)
