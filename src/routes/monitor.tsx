@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, ChevronDown, ExternalLink, Mail, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, ChevronDown, ExternalLink, Mail, Plus, RefreshCw, Smartphone, X } from "lucide-react";
+import { toast } from "sonner";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { formatDate } from "@/data/mapping";
 import {
   useMonitor,
+  useSiteMonitor,
+  type CronRow,
+  type MonAlertRow,
+  type SiteLight,
+  type SiteRow,
   type AlertRow,
   type Light,
   type MonitorRow,
@@ -18,7 +25,7 @@ export const Route = createFileRoute("/monitor")({
   head: () => ({
     meta: [
       { title: "監控 · Bluluma HQ" },
-      { name: "description", content: "NightClerk 每個客人的自動同步狀態：燈號、最近執行、警示。" },
+      { name: "description", content: "網站在不在線、網域到期、Google 收錄、自動同步和排程的燈號與警示。" },
       { property: "og:title", content: "監控 · Bluluma HQ" },
     ],
   }),
@@ -221,64 +228,320 @@ function MonitorCard({ m, runs }: { m: MonitorRow; runs: RunRow[] }) {
   );
 }
 
+const GREY = { dot: "bg-muted-foreground/40", label: "還沒檢查", tone: "bg-muted text-muted-foreground" };
+const lightOf = (s: SiteLight) => (s === "grey" ? GREY : LIGHT[s]);
+
+function SiteDot({ s }: { s: SiteLight }) {
+  return s === "grey" ? (
+    <span className={cn("inline-flex h-3 w-3 shrink-0 rounded-full", GREY.dot)} />
+  ) : (
+    <Dot light={s} pulse={s === "red"} />
+  );
+}
+
+function daysLeft(date: string | null) {
+  if (!date) return null;
+  return Math.floor((Date.parse(date) - Date.now()) / 86_400_000);
+}
+
+function siteNotes(s: SiteRow) {
+  const notes: string[] = [];
+  if (s.status === "grey") return ["等第一次檢查"];
+  if (s.last_error && s.fails > 0) notes.push(s.last_error);
+  else if (s.http_status && s.http_status >= 400) notes.push(`HTTP ${s.http_status}`);
+  if (s.ms !== null && s.fails === 0) notes.push(`${(s.ms / 1000).toFixed(1)} 秒`);
+  if (s.check_index && s.noindex) notes.push("noindex：Google 不收錄");
+  const d = daysLeft(s.domain_expires);
+  if (d !== null) notes.push(d < 60 ? `網域剩 ${d} 天` : `網域 ${s.domain_expires} 到期`);
+  if (!s.managed) notes.push("觀察中・不發警示");
+  return notes;
+}
+
+function SiteItem({ s, onRemove }: { s: SiteRow; onRemove: () => void }) {
+  const light = lightOf(s.status);
+  return (
+    <li className="flex items-start gap-3 px-4 py-3">
+      <span className="pt-1.5">
+        <SiteDot s={s.status} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="truncate font-medium">{s.name}</p>
+          {s.status !== "green" && (
+            <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", light.tone)}>{light.label}</span>
+          )}
+        </div>
+        <a
+          href={`https://${s.domain}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {s.domain}
+          <ExternalLink className="h-3 w-3" />
+        </a>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{siteNotes(s).join(" · ")}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`停止監控 ${s.name}`}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </li>
+  );
+}
+
+function AddSite({ onAdd, busy }: { onAdd: (v: { domain: string; name: string; grp: "own" | "client" }) => Promise<void>; busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [domain, setDomain] = useState("");
+  const [name, setName] = useState("");
+  const [grp, setGrp] = useState<"own" | "client">("client");
+  if (!open)
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex min-h-12 w-full items-center justify-center gap-2 border-t text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+      >
+        <Plus className="h-4 w-4" />
+        新增網站
+      </button>
+    );
+  return (
+    <form
+      className="grid gap-2 border-t p-4 sm:grid-cols-[1fr_1fr_auto_auto]"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          await onAdd({ domain, name, grp });
+          toast.success("加好了，下一輪檢查就會出現燈號");
+          setDomain("");
+          setName("");
+          setOpen(false);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "新增失敗");
+        }
+      }}
+    >
+      <label className="sr-only" htmlFor="mon-domain">網址</label>
+      <input id="mon-domain" required value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="網址，例如 example.com"
+        className="h-11 rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm" />
+      <label className="sr-only" htmlFor="mon-name">名稱</label>
+      <input id="mon-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="名稱（客人或品牌）"
+        className="h-11 rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm" />
+      <label className="sr-only" htmlFor="mon-grp">類別</label>
+      <select id="mon-grp" value={grp} onChange={(e) => setGrp(e.target.value as "own" | "client")}
+        className="h-11 rounded-xl border border-input bg-background px-3 text-sm">
+        <option value="client">客人</option>
+        <option value="own">自己的</option>
+      </select>
+      <button type="submit" disabled={busy} className="h-11 rounded-xl bg-ink px-5 text-sm font-medium text-ink-foreground disabled:opacity-50">
+        加入
+      </button>
+    </form>
+  );
+}
+
+const JOB_LABEL: Record<string, string> = {
+  "ddf-sync": "Realtor MLS 房源同步",
+  "nc-watchdog": "NightClerk 看門狗",
+  "site-monitor": "網站監控",
+};
+function scheduleLabel(s: string) {
+  if (s === "* * * * *") return "每分鐘";
+  const m = s.match(/^\*\/(\d+) \* \* \* \*$/);
+  if (m) return `每 ${m[1]} 分鐘`;
+  return s;
+}
+function cronLight(j: CronRow): Light {
+  if (j.last_status === "failed") return "red";
+  if (j.fails_24h > 0) return "yellow";
+  return "green";
+}
+
+function CronList({ jobs }: { jobs: CronRow[] }) {
+  return (
+    <ul className="panel divide-y divide-border p-0">
+      {jobs.map((j) => {
+        const l = cronLight(j);
+        return (
+          <li key={j.jobname} className="flex items-start gap-3 px-4 py-3">
+            <span className="pt-1.5">
+              <Dot light={l} pulse={l === "red"} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{JOB_LABEL[j.jobname] ?? j.jobname}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                {scheduleLabel(j.schedule)} · 24 小時跑了 {j.runs_24h} 次
+                {j.fails_24h > 0 ? `，失敗 ${j.fails_24h} 次` : "，全部成功"} · 上次 {ago(j.last_end)}
+                {!j.active && " · 已暫停"}
+              </p>
+              {j.last_status === "failed" && j.last_message && (
+                <p className="mt-1 text-xs text-red-700">{j.last_message}</p>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function MonAlertCard({ alert, onResolve, busy }: { alert: MonAlertRow; onResolve: () => void; busy: boolean }) {
+  return (
+    <AlertCard
+      alert={{ ...alert, monitor_id: alert.ref } as unknown as AlertRow}
+      onResolve={onResolve}
+      busy={busy}
+    />
+  );
+}
+
+function SectionTitle({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <div className="mb-2 flex items-center justify-between gap-3">
+      <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">{children}</h2>
+      {right}
+    </div>
+  );
+}
+
 function MonitorPage() {
-  const { data, error, isLoading, refetch, resolve } = useMonitor();
-  if (error) return <DataError message={error.message} retry={() => void refetch()} />;
-  if (isLoading || !data) return <DataSkeleton />;
-  const active = new Set(data.monitors.map((m) => m.id));
-  const open = data.alerts.filter((a) => !a.resolved_at && active.has(a.monitor_id));
-  const bad = data.monitors.filter((m) => m.status !== "green");
+  const nc = useMonitor();
+  const mon = useSiteMonitor();
+  const [tab, setTab] = useState<"own" | "client">("client");
+  if (nc.error) return <DataError message={nc.error.message} retry={() => void nc.refetch()} />;
+  if (mon.error) return <DataError message={mon.error.message} retry={() => void mon.refetch()} />;
+  if (nc.isLoading || !nc.data || mon.isLoading || !mon.data) return <DataSkeleton />;
+
+  const active = new Set(nc.data.monitors.map((m) => m.id));
+  const ncOpen = nc.data.alerts.filter((a) => !a.resolved_at && active.has(a.monitor_id));
+  const sites = mon.data.sites;
+  const managed = sites.filter((s) => s.managed);
+  const siteBad = managed.filter((s) => s.status === "red" || s.status === "yellow");
+  const ncBad = nc.data.monitors.filter((m) => m.status !== "green");
+  const jobBad = mon.data.jobs.filter((j) => j.active && cronLight(j) !== "green");
+  const anyRed =
+    managed.some((s) => s.status === "red") ||
+    ncBad.some((m) => m.status === "red") ||
+    jobBad.some((j) => cronLight(j) === "red");
+  const badCount = siteBad.length + ncBad.length + jobBad.length;
+  const lastCheck = sites.map((s) => s.last_checked_at).filter((v): v is string => Boolean(v)).sort().pop() ?? null;
+  const order: Record<SiteLight, number> = { red: 0, yellow: 1, grey: 2, green: 3 };
+  const shown = sites.filter((s) => s.grp === tab).sort((a, b) => order[a.status] - order[b.status] || a.name.localeCompare(b.name));
+  const count = (g: "own" | "client") => sites.filter((s) => s.grp === g).length;
+  const totalAlerts = ncOpen.length + mon.data.alerts.length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">監控</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          NightClerk 夜班狀態。紅燈會推播到手機，黃燈寄信，綠燈不打擾你。
+          網站在不在線、網域到期、Google 收錄、自動同步和排程。紅燈推播到手機，黃燈寄信，綠燈不打擾你。
         </p>
       </div>
 
-      <div className={cn("panel flex items-center gap-3 p-4", bad.length ? "" : "bg-st-almost-bg")}>
-        <Dot
-          light={bad.some((m) => m.status === "red") ? "red" : bad.length ? "yellow" : "green"}
-        />
-        <p className="text-sm font-medium">
-          {bad.length === 0
-            ? `全部正常 · ${data.monitors.length} 個同步在跑`
-            : `${bad.length} 個要看一下`}
-        </p>
+      <div className={cn("panel flex flex-wrap items-center gap-3 p-4", badCount ? "" : "bg-st-almost-bg")}>
+        <Dot light={anyRed ? "red" : badCount ? "yellow" : "green"} pulse={anyRed} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">
+            {badCount === 0 ? "全部正常" : `${badCount} 個要看一下`}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {sites.length} 個網站 · {nc.data.monitors.length} 個同步 · {mon.data.jobs.length} 個排程 · 上次檢查 {ago(lastCheck)}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={mon.runNow.isPending}
+          onClick={() =>
+            mon.runNow.mutate(undefined, {
+              onSuccess: () => toast.success("檢查完成"),
+              onError: (e) => toast.error(e.message),
+            })
+          }
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border bg-card px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
+        >
+          <RefreshCw className={cn("h-4 w-4", mon.runNow.isPending && "animate-spin")} />
+          {mon.runNow.isPending ? "檢查中…" : "立即檢查"}
+        </button>
       </div>
 
-      {open.length > 0 && (
+      {totalAlerts > 0 && (
         <section>
-          <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
-            未處理的警示
-          </h2>
+          <SectionTitle>未處理的警示</SectionTitle>
           <ul className="space-y-3">
-            {open.map((a) => (
-              <AlertCard
-                key={a.id}
-                alert={a}
-                busy={resolve.isPending}
-                onResolve={() => resolve.mutate(a.id)}
-              />
+            {mon.data.alerts.map((a) => (
+              <MonAlertCard key={`m${a.id}`} alert={a} busy={mon.resolveAlert.isPending} onResolve={() => mon.resolveAlert.mutate(a.id)} />
+            ))}
+            {ncOpen.map((a) => (
+              <AlertCard key={`n${a.id}`} alert={a} busy={nc.resolve.isPending} onResolve={() => nc.resolve.mutate(a.id)} />
             ))}
           </ul>
         </section>
       )}
 
       <section>
-        <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">客人</h2>
-        {data.monitors.length === 0 ? (
-          <div className="panel p-10 text-center text-sm text-muted-foreground">
-            還沒有接上任何同步
-          </div>
+        <SectionTitle
+          right={
+            <div className="inline-flex rounded-xl border border-border bg-card p-1">
+              {(["client", "own"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setTab(g)}
+                  className={cn("h-9 rounded-lg px-3.5 text-sm transition-colors", tab === g ? "bg-ink text-ink-foreground" : "text-muted-foreground hover:text-foreground")}
+                >
+                  {g === "client" ? "客人" : "自己的"} <span className="tabular-nums opacity-70">{count(g)}</span>
+                </button>
+              ))}
+            </div>
+          }
+        >
+          網站 · 每 10 分鐘檢查
+        </SectionTitle>
+        <div className="panel overflow-hidden p-0">
+          {shown.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">這裡還沒有網站</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {shown.map((s) => (
+                <SiteItem
+                  key={s.domain}
+                  s={s}
+                  onRemove={() => {
+                    if (window.confirm(`停止監控 ${s.name}？`)) mon.removeSite.mutate(s.domain);
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+          <AddSite busy={mon.addSite.isPending} onAdd={(v) => mon.addSite.mutateAsync(v)} />
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle>自動同步 · NightClerk</SectionTitle>
+        {nc.data.monitors.length === 0 ? (
+          <div className="panel p-10 text-center text-sm text-muted-foreground">還沒有接上任何同步</div>
         ) : (
           <div className="space-y-3">
-            {data.monitors.map((m) => (
-              <MonitorCard key={m.id} m={m} runs={data.runs.filter((r) => r.monitor_id === m.id)} />
+            {nc.data.monitors.map((m) => (
+              <MonitorCard key={m.id} m={m} runs={nc.data.runs.filter((r) => r.monitor_id === m.id)} />
             ))}
           </div>
+        )}
+      </section>
+
+      <section>
+        <SectionTitle>排程 · 後台自動工作</SectionTitle>
+        {mon.data.jobs.length === 0 ? (
+          <div className="panel p-10 text-center text-sm text-muted-foreground">沒有排程</div>
+        ) : (
+          <CronList jobs={mon.data.jobs} />
         )}
       </section>
     </div>
