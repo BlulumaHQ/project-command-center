@@ -431,7 +431,9 @@ function MonitorPage() {
   const badCount = siteBad.length + ncBad.length + jobBad.length;
   const lastCheck = sites.map((s) => s.last_checked_at).filter((v): v is string => Boolean(v)).sort().pop() ?? null;
   const order: Record<SiteLight, number> = { red: 0, yellow: 1, grey: 2, green: 3 };
-  const shown = sites.filter((s) => s.grp === tab).sort((a, b) => order[a.status] - order[b.status] || a.name.localeCompare(b.name));
+  const shown = sites
+    .filter((s) => s.grp === tab)
+    .sort((a, b) => Number(b.managed) - Number(a.managed) || order[a.status] - order[b.status] || a.name.localeCompare(b.name));
   const count = (g: "own" | "client") => sites.filter((s) => s.grp === g).length;
   const totalAlerts = ncOpen.length + mon.data.alerts.length;
 
