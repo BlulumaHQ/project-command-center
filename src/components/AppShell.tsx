@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   NotebookPen,
+  Palette,
   ScanFace,
   Sun,
   Tag,
@@ -47,6 +48,7 @@ export const NAV: NavItem[] = [
   { to: "/board", label: "董事會", icon: Landmark },
   { to: "/monitor", label: "監控", icon: Activity },
   { to: "/learn", label: "學習", icon: GraduationCap },
+  { to: "/styles", label: "風格庫", icon: Palette },
   { to: "/tools", label: "工具 & 手冊", icon: LayoutGrid },
   { to: "/log", label: "紀錄", icon: History },
 ];

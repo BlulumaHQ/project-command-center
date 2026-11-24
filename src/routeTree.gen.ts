@@ -20,6 +20,7 @@ import { Route as MonitorRouteImport } from './routes/monitor'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as StylesRouteImport } from './routes/styles'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as ToolsRouteImport } from './routes/tools'
@@ -81,6 +82,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StylesRoute = StylesRouteImport.update({
+  id: '/styles',
+  path: '/styles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
+  '/styles': typeof StylesRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
+  '/styles': typeof StylesRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
+  '/styles': typeof StylesRoute
   '/tasks': typeof TasksRoute
   '/team': typeof TeamRoute
   '/tools': typeof ToolsRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/pricing'
     | '/projects'
+    | '/styles'
     | '/tasks'
     | '/team'
     | '/tools'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/pricing'
     | '/projects'
+    | '/styles'
     | '/tasks'
     | '/team'
     | '/tools'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/pricing'
     | '/projects'
+    | '/styles'
     | '/tasks'
     | '/team'
     | '/tools'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRoute
   PricingRoute: typeof PricingRoute
   ProjectsRoute: typeof ProjectsRoute
+  StylesRoute: typeof StylesRoute
   TasksRoute: typeof TasksRoute
   TeamRoute: typeof TeamRoute
   ToolsRoute: typeof ToolsRoute
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/styles': {
+      id: '/styles'
+      path: '/styles'
+      fullPath: '/styles'
+      preLoaderRoute: typeof StylesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tasks': {
       id: '/tasks'
       path: '/tasks'
@@ -367,6 +387,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRoute,
   PricingRoute: PricingRoute,
   ProjectsRoute: ProjectsRoute,
+  StylesRoute: StylesRoute,
   TasksRoute: TasksRoute,
   TeamRoute: TeamRoute,
   ToolsRoute: ToolsRoute,
