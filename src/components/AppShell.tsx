@@ -16,6 +16,7 @@ import {
   Palette,
   ScanFace,
   Sun,
+  Sunrise,
   Tag,
   Users,
 } from "lucide-react";
@@ -37,6 +38,7 @@ type NavItem = {
 
 /** Every HQ tab, in sidebar order. */
 export const NAV: NavItem[] = [
+  { to: "/morning", label: "晨報", icon: Sunrise },
   { to: "/", label: "今日", icon: Sun, exact: true },
   { to: "/projects", label: "專案", icon: FolderKanban },
   { to: "/tasks", label: "任務", icon: ListChecks },
@@ -54,7 +56,7 @@ export const NAV: NavItem[] = [
 ];
 
 /** Phone bottom bar: four tabs + 更多. */
-const MOBILE_TABS = ["/", "/projects", "/clients", "/money"];
+const MOBILE_TABS = ["/morning", "/", "/projects", "/clients"];
 
 /** Standalone apps that open in a new tab; `soon` ones are planned but not built. */
 const APPS: { name: string; url?: string; soon?: boolean }[] = [
@@ -218,7 +220,7 @@ export function MobileTopBar({ children }: { children?: React.ReactNode }) {
   );
 }
 
-/** Phone bottom bar: 今日 / 專案 / 客戶 / 財務 / 更多. */
+/** Phone bottom bar: 晨報 / 今日 / 專案 / 客戶 / 更多. */
 export function MobileTabBar() {
   const [open, setOpen] = useState(false);
   const { busy, signOut } = useSignOut();

@@ -19,11 +19,12 @@ interface ActState { action: Action; until: number; key: number }
 const BODY: Record<string, string> = {
   atlas: "#1E3A8A", memo: "#14B8A6", rocket: "#F97316", checky: "#22C55E",
   pixel: "#8B5CF6", guido: "#3B82F6", mia: "#EC4899", scout: "#D97706",
+  bolt: "#EAB308", compass: "#4F46E5",
 };
 
 // Desk anchors (head centre). Back row sits higher, front row lower.
 const BACK = [130, 255, 545, 670];
-const FRONT = [210, 400, 590];
+const FRONT = [110, 255, 400, 545, 690];
 const BACK_Y = 118;
 const FRONT_Y = 196;
 const COFFEE_X = 62;

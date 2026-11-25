@@ -1,11 +1,12 @@
 import { robotArt } from "@/components/RobotAvatar";
 
 const DESKS: { id: string; x: number; delay: number }[] = [
-  { id: "atlas", x: 160, delay: 0 },
-  { id: "mia", x: 235, delay: 0.3 },
-  { id: "rocket", x: 310, delay: 0.6 },
-  { id: "pixel", x: 385, delay: 0.2 },
-  { id: "checky", x: 460, delay: 0.5 },
+  { id: "atlas", x: 152, delay: 0 },
+  { id: "bolt", x: 214, delay: 0.4 },
+  { id: "mia", x: 276, delay: 0.3 },
+  { id: "rocket", x: 338, delay: 0.6 },
+  { id: "pixel", x: 400, delay: 0.2 },
+  { id: "checky", x: 462, delay: 0.5 },
 ];
 
 /** A long, thin office scene of the HQ robots at work. Decorative only. */

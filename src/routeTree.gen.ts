@@ -17,6 +17,7 @@ import { Route as LogRouteImport } from './routes/log'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MoneyRouteImport } from './routes/money'
 import { Route as MonitorRouteImport } from './routes/monitor'
+import { Route as MorningRouteImport } from './routes/morning'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -65,6 +66,11 @@ const MoneyRoute = MoneyRouteImport.update({
 const MonitorRoute = MonitorRouteImport.update({
   id: '/monitor',
   path: '/monitor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorningRoute = MorningRouteImport.update({
+  id: '/morning',
+  path: '/morning',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotesRoute = NotesRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/money': typeof MoneyRoute
   '/monitor': typeof MonitorRoute
+  '/morning': typeof MorningRoute
   '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/money': typeof MoneyRoute
   '/monitor': typeof MonitorRoute
+  '/morning': typeof MorningRoute
   '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/money': typeof MoneyRoute
   '/monitor': typeof MonitorRoute
+  '/morning': typeof MorningRoute
   '/notes': typeof NotesRoute
   '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/money'
     | '/monitor'
+    | '/morning'
     | '/notes'
     | '/pricing'
     | '/projects'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/money'
     | '/monitor'
+    | '/morning'
     | '/notes'
     | '/pricing'
     | '/projects'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/money'
     | '/monitor'
+    | '/morning'
     | '/notes'
     | '/pricing'
     | '/projects'
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MoneyRoute: typeof MoneyRoute
   MonitorRoute: typeof MonitorRoute
+  MorningRoute: typeof MorningRoute
   NotesRoute: typeof NotesRoute
   PricingRoute: typeof PricingRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -307,6 +320,13 @@ declare module '@tanstack/react-router' {
       path: '/monitor'
       fullPath: '/monitor'
       preLoaderRoute: typeof MonitorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morning': {
+      id: '/morning'
+      path: '/morning'
+      fullPath: '/morning'
+      preLoaderRoute: typeof MorningRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notes': {
@@ -384,6 +404,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MoneyRoute: MoneyRoute,
   MonitorRoute: MonitorRoute,
+  MorningRoute: MorningRoute,
   NotesRoute: NotesRoute,
   PricingRoute: PricingRoute,
   ProjectsRoute: ProjectsRoute,

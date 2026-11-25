@@ -14,6 +14,12 @@ interface DeadlineRow { id: string; title: string; detail: string | null; when_l
 interface WaitingRow { id: string; initials: string; who: string; project_label: string; what: string; }
 interface MetaRow { key: string; value: unknown; }
 export type AgentStatus = "ok" | "check" | "broken" | "idle";
+const AGENT_STATUSES: AgentStatus[] = ["ok", "check", "broken", "idle"];
+/** Scheduled agents may write other words (running / error); map them onto the four HQ states. */
+export function normalizeAgentStatus(s: string): AgentStatus {
+  if ((AGENT_STATUSES as string[]).includes(s)) return s as AgentStatus;
+  return s === "error" || s === "failed" ? "broken" : s === "running" ? "ok" : "idle";
+}
 export interface AgentRow { id: string; name: string; name_zh: string; role: string; skill: string | null; trigger_hint: string | null; avatar: string; is_manager: boolean; status: AgentStatus; status_note: string | null; last_run_at: string | null; sort: number; }
 export interface AgentRunRow { id: string; agent_id: string; project_id: string | null; summary: string; outcome: "ok" | "check" | "broken"; created_at: string; }
 export type LearnStatus = "new" | "todo" | "done" | "skip";
@@ -52,7 +58,7 @@ export function useStore() {
     { ...options, queryKey: key("pcc_log"), queryFn: () => readTable<LogRow>("pcc_log", "created_at") },
     { ...options, queryKey: key("pcc_meta"), queryFn: () => readTable<MetaRow>("pcc_meta", "key") },
     { ...options, queryKey: key("pcc_notes"), queryFn: () => readTable<NoteRow>("pcc_notes", "created_at") },
-    { ...options, queryKey: key("pcc_agents"), queryFn: () => readTable<AgentRow>("pcc_agents") },
+    { ...options, queryKey: key("pcc_agents"), queryFn: () => readTable<AgentRow>("pcc_agents").then((list) => list.map((a) => ({ ...a, status: normalizeAgentStatus(a.status) }))) },
     { ...options, queryKey: key("pcc_agent_runs"), queryFn: () => readTable<AgentRunRow>("pcc_agent_runs", "created_at") },
     { ...options, queryKey: key("pcc_learning"), queryFn: () => readTable<LearnRow>("pcc_learning", "created_at") },
   ] });

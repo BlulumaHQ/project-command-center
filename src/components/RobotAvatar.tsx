@@ -138,6 +138,40 @@ const robots: Record<string, { bg: string; art: ReactNode }> = {
       </>
     ),
   },
+  bolt: {
+    bg: "#FEF9C3",
+    art: (
+      <>
+        <polygon points="-4,-62 -16,-38 -6,-38 -12,-26 8,-46 -2,-46 6,-62" fill="#FACC15" stroke="#A16207" strokeWidth="2" strokeLinejoin="round" />
+        <rect x="-44" y="-6" width="8" height="20" rx="3" fill="#A16207" />
+        <rect x="36" y="-6" width="8" height="20" rx="3" fill="#A16207" />
+        <rect x="-38" y="-30" width="76" height="64" rx="12" fill="#EAB308" />
+        <rect x="-28" y="-14" width="56" height="20" rx="10" fill="#422006" />
+        <rect x="-19" y="-8" width="12" height="8" rx="2" fill="#FDE047" />
+        <rect x="7" y="-8" width="12" height="8" rx="2" fill="#FDE047" />
+        <path d="M-12,18 L-4,14 L4,22 L12,16" fill="none" stroke="#422006" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="-30" y="26" width="60" height="5" rx="2.5" fill="#A16207" />
+      </>
+    ),
+  },
+  compass: {
+    bg: "#E0E7FF",
+    art: (
+      <>
+        <line x1="0" y1="-34" x2="0" y2="-48" stroke="#3730A3" strokeWidth="3" />
+        <circle cx="0" cy="-51" r="5" fill="#F472B6" />
+        <circle cx="0" cy="0" r="38" fill="#4F46E5" />
+        <circle cx="0" cy="0" r="27" fill="#EEF2FF" stroke="#C7D2FE" strokeWidth="3" />
+        <text x="0" y="-15" textAnchor="middle" fontSize="9" fontWeight="800" fill="#3730A3">N</text>
+        <polygon points="0,-12 6,0 0,4 -6,0" fill="#EF4444" />
+        <polygon points="0,16 6,0 0,-4 -6,0" fill="#312E81" />
+        <circle cx="0" cy="2" r="3" fill="#FACC15" />
+        <circle cx="-15" cy="-4" r="3.5" fill="#1E1B4B" />
+        <circle cx="15" cy="-4" r="3.5" fill="#1E1B4B" />
+        <path d="M-9,20 Q0,25 9,20" fill="none" stroke="#3730A3" strokeWidth="2.5" strokeLinecap="round" />
+      </>
+    ),
+  },
   // ── Bluluma 董事會 (original robots, not likenesses) ──
   hormozi: {
     bg: "#FFEEDF",
