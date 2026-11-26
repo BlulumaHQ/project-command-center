@@ -270,6 +270,143 @@ const robots: Record<string, { bg: string; art: ReactNode }> = {
       </>
     ),
   },
+  blueprint: {
+    bg: "#E6EEFA",
+    art: (
+      <>
+        <rect x="-36" y="-32" width="72" height="64" rx="12" fill="#2F5FAF" />
+        <path d="M-36,-14 H36 M-36,4 H36 M-18,-32 V32 M0,-32 V32 M18,-32 V32" stroke="#5887DA" strokeWidth="1.2" />
+        <rect x="-26" y="-14" width="52" height="20" rx="10" fill="#0F2A57" />
+        <circle cx="-11" cy="-4" r="5" fill="#BFDBFE" />
+        <circle cx="11" cy="-4" r="5" fill="#BFDBFE" />
+        <path d="M-8,18 Q0,23 8,18" fill="none" stroke="#E6EEFA" strokeWidth="2.5" strokeLinecap="round" />
+        <rect x="-30" y="-44" width="60" height="10" rx="3" fill="#F5B70A" />
+        <rect x="-18" y="-52" width="36" height="10" rx="5" fill="#F5B70A" />
+      </>
+    ),
+  },
+  mirror: {
+    bg: "#EEF2FF",
+    art: (
+      <>
+        <ellipse cx="0" cy="0" rx="36" ry="34" fill="#94A3B8" />
+        <ellipse cx="0" cy="0" rx="28" ry="26" fill="#E2E8F0" />
+        <path d="M-18,-14 L-6,-24 M-10,-6 L6,-20" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="-10" cy="2" r="4.5" fill="#334155" />
+        <circle cx="10" cy="2" r="4.5" fill="#334155" />
+        <path d="M-7,14 Q0,18 7,14" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+      </>
+    ),
+  },
+  sentinel: {
+    bg: "#DCE7F9",
+    art: (
+      <>
+        <path d="M0,-44 L34,-30 V2 C34,22 18,34 0,40 C-18,34 -34,22 -34,2 V-30 Z" fill="#1E3A8A" />
+        <rect x="-24" y="-14" width="48" height="16" rx="8" fill="#0B1530" />
+        <rect x="-18" y="-9" width="36" height="6" rx="3" fill="#38BDF8" />
+        <path d="M-9,16 H9" stroke="#93C5FD" strokeWidth="3" strokeLinecap="round" />
+        <path d="M0,-36 V-26" stroke="#38BDF8" strokeWidth="3" strokeLinecap="round" />
+      </>
+    ),
+  },
+  duel: {
+    bg: "#E0F2FE",
+    art: (
+      <>
+        <rect x="-36" y="-30" width="72" height="62" rx="16" fill="#0E7490" />
+        <circle cx="-13" cy="-4" r="9" fill="#ECFEFF" />
+        <circle cx="13" cy="-4" r="9" fill="#ECFEFF" />
+        <circle cx="-10" cy="-4" r="4" fill="#0E7490" />
+        <circle cx="10" cy="-4" r="4" fill="#0E7490" />
+        <path d="M-10,18 H10" stroke="#ECFEFF" strokeWidth="3" strokeLinecap="round" />
+        <path d="M-30,-46 L-14,-30 M30,-46 L14,-30" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" />
+      </>
+    ),
+  },
+  justice: {
+    bg: "#EDE9E3",
+    art: (
+      <>
+        <rect x="-34" y="-30" width="68" height="62" rx="14" fill="#44403C" />
+        <rect x="-26" y="-12" width="52" height="18" rx="9" fill="#1C1917" />
+        <circle cx="-11" cy="-3" r="4.5" fill="#E7D3A8" />
+        <circle cx="11" cy="-3" r="4.5" fill="#E7D3A8" />
+        <path d="M-8,18 H8" stroke="#E7D3A8" strokeWidth="3" strokeLinecap="round" />
+        <path d="M0,-50 V-32 M-20,-44 H20" stroke="#B08D5B" strokeWidth="3" strokeLinecap="round" />
+        <path d="M-26,-44 L-20,-36 L-14,-44 M14,-44 L20,-36 L26,-44" fill="none" stroke="#B08D5B" strokeWidth="2.5" />
+      </>
+    ),
+  },
+  echo: {
+    bg: "#F7EEDD",
+    art: (
+      <>
+        <rect x="-36" y="-32" width="72" height="64" rx="20" fill="#C2410C" />
+        <rect x="-26" y="-14" width="52" height="22" rx="11" fill="#431407" />
+        <circle cx="-11" cy="-3" r="5" fill="#FED7AA" />
+        <circle cx="11" cy="-3" r="5" fill="#FED7AA" />
+        <path d="M-9,16 Q0,24 9,16" fill="none" stroke="#FED7AA" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M30,-40 L46,-48 V-24 L30,-32 Z" fill="#B08D5B" />
+        <path d="M50,-42 Q56,-36 50,-30" fill="none" stroke="#B08D5B" strokeWidth="2.5" strokeLinecap="round" />
+      </>
+    ),
+  },
+  deal: {
+    bg: "#F3ECE0",
+    art: (
+      <>
+        <rect x="-36" y="-32" width="72" height="64" rx="14" fill="#1F2937" />
+        <rect x="-26" y="-14" width="52" height="20" rx="10" fill="#111827" />
+        <circle cx="-11" cy="-4" r="5" fill="#FDE68A" />
+        <circle cx="11" cy="-4" r="5" fill="#FDE68A" />
+        <path d="M-8,16 Q0,21 8,16" fill="none" stroke="#FDE68A" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M0,22 L-6,32 H6 Z" fill="#B08D5B" />
+        <rect x="-24" y="-46" width="48" height="10" rx="5" fill="#B08D5B" />
+      </>
+    ),
+  },
+  sunny: {
+    bg: "#FEF3C7",
+    art: (
+      <>
+        <circle cx="0" cy="0" r="35" fill="#F59E0B" />
+        <rect x="-26" y="-14" width="52" height="22" rx="11" fill="#78350F" />
+        <circle cx="-11" cy="-3" r="5" fill="#FEF3C7" />
+        <circle cx="11" cy="-3" r="5" fill="#FEF3C7" />
+        <path d="M-10,16 Q0,25 10,16" fill="none" stroke="#78350F" strokeWidth="3" strokeLinecap="round" />
+        <path d="M-38,-6 C-38,-44 38,-44 38,-6" fill="none" stroke="#1F2937" strokeWidth="5" />
+        <rect x="-44" y="-12" width="10" height="18" rx="4" fill="#1F2937" />
+        <rect x="34" y="-12" width="10" height="18" rx="4" fill="#1F2937" />
+      </>
+    ),
+  },
+  ally: {
+    bg: "#F5EDE4",
+    art: (
+      <>
+        <rect x="-34" y="-30" width="68" height="62" rx="22" fill="#BE8A5C" />
+        <rect x="-24" y="-12" width="48" height="18" rx="9" fill="#5B3A1F" />
+        <path d="M-15,-4 Q-11,-9 -7,-4 M7,-4 Q11,-9 15,-4" fill="none" stroke="#FDE7D3" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M-9,16 Q0,23 9,16" fill="none" stroke="#5B3A1F" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M0,-34 C-6,-46 -20,-40 -12,-30 L0,-20 L12,-30 C20,-40 6,-46 0,-34 Z" fill="#E11D48" />
+      </>
+    ),
+  },
+  ledger: {
+    bg: "#ECFDF5",
+    art: (
+      <>
+        <rect x="-36" y="-30" width="72" height="62" rx="12" fill="#065F46" />
+        <rect x="-26" y="-14" width="52" height="20" rx="4" fill="#022C22" />
+        <rect x="-20" y="-9" width="10" height="9" rx="2" fill="#6EE7B7" />
+        <rect x="10" y="-9" width="10" height="9" rx="2" fill="#6EE7B7" />
+        <path d="M-8,18 H8" stroke="#A7F3D0" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="0" cy="-44" r="10" fill="#F5B70A" />
+        <circle cx="0" cy="-44" r="6" fill="none" stroke="#B45309" strokeWidth="1.6" />
+      </>
+    ),
+  },
   guest: {
     bg: "#EFE7FD",
     art: (

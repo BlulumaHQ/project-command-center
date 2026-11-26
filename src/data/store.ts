@@ -20,7 +20,8 @@ export function normalizeAgentStatus(s: string): AgentStatus {
   if ((AGENT_STATUSES as string[]).includes(s)) return s as AgentStatus;
   return s === "error" || s === "failed" ? "broken" : s === "running" ? "ok" : "idle";
 }
-export interface AgentRow { id: string; name: string; name_zh: string; role: string; skill: string | null; trigger_hint: string | null; avatar: string; is_manager: boolean; status: AgentStatus; status_note: string | null; last_run_at: string | null; sort: number; }
+export interface AgentRow { id: string; name: string; name_zh: string; role: string; skill: string | null; trigger_hint: string | null; avatar: string; is_manager: boolean; status: AgentStatus; status_note: string | null; last_run_at: string | null; sort: number; department_id: string | null; }
+export interface DepartmentRow { id: string; num: number | null; name_zh: string; phase: "hq" | "pre" | "post"; avatar: string; summary: string | null; sort: number; }
 export interface AgentRunRow { id: string; agent_id: string; project_id: string | null; summary: string; outcome: "ok" | "check" | "broken"; created_at: string; }
 export type LearnStatus = "new" | "todo" | "done" | "skip";
 export interface LearnRow { id: string; url: string; author: string | null; title: string | null; summary: string | null; category: string | null; usefulness: number | null; action: string | null; status: LearnStatus; source: string; created_at: string; }
@@ -49,7 +50,7 @@ export function useStore() {
   const key = (table: string) => ["pcc", user?.id, table];
   const enabled = ready && Boolean(user);
   const options = { enabled, staleTime: 30_000, retry: 1 };
-  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery, learnQuery] = useQueries({ queries: [
+  const [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery, learnQuery, deptQuery] = useQueries({ queries: [
     { ...options, queryKey: key("pcc_projects"), queryFn: () => readTable<ProjectRow>("pcc_projects", "sort", ["archived", false]) },
     { ...options, queryKey: key("pcc_tasks"), queryFn: () => readTable<TaskRow>("pcc_tasks") },
     { ...options, queryKey: key("pcc_deadlines"), queryFn: () => readTable<DeadlineRow>("pcc_deadlines", "sort", ["done", false]) },
@@ -61,6 +62,7 @@ export function useStore() {
     { ...options, queryKey: key("pcc_agents"), queryFn: () => readTable<AgentRow>("pcc_agents").then((list) => list.map((a) => ({ ...a, status: normalizeAgentStatus(a.status) }))) },
     { ...options, queryKey: key("pcc_agent_runs"), queryFn: () => readTable<AgentRunRow>("pcc_agent_runs", "created_at") },
     { ...options, queryKey: key("pcc_learning"), queryFn: () => readTable<LearnRow>("pcc_learning", "created_at") },
+    { ...options, queryKey: key("pcc_departments"), queryFn: () => readTable<DepartmentRow>("pcc_departments") },
   ] });
 
   const mutation = useMutation({
@@ -83,7 +85,7 @@ export function useStore() {
     exec: () => run(supabase.from("pcc_tasks").update(remote).eq("id", taskId)),
   } as Op);
 
-  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery, learnQuery];
+  const queries = [projectsQuery, tasksQuery, deadlinesQuery, chainQuery, waitingQuery, logQuery, metaQuery, notesQuery, agentsQuery, runsQuery, learnQuery, deptQuery];
   const rows = projectsQuery.data ?? [];
   const taskRows = tasksQuery.data ?? [];
   const noteRows = notesQuery.data ?? [];
@@ -109,6 +111,7 @@ export function useStore() {
     getChain: () => chainQuery.data ?? [],
     getWaiting: (): WaitingItem[] => (waitingQuery.data ?? []).map((w) => ({ initials: w.initials, who: w.who, project: w.project_label, what: w.what })),
     getAgents: () => agentsQuery.data ?? [],
+    getDepartments: () => deptQuery.data ?? [],
     setAgentStatus: async (agentId: string, status: AgentStatus, note: string | null = null) => {
       client.setQueryData<AgentRow[]>(key("pcc_agents"), (list) => (list ?? []).map((a) => a.id === agentId ? { ...a, status, status_note: note } : a));
       const { error } = await supabase.from("pcc_agents").update({ status, status_note: note, updated_at: new Date().toISOString() }).eq("id", agentId);

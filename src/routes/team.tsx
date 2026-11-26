@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Copy, ExternalLink, Wrench } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useStore, type AgentRow, type AgentStatus } from "@/data/store";
+import { useStore, type AgentRow, type AgentStatus, type DepartmentRow } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { RobotAvatar } from "@/components/RobotAvatar";
-import { AgentOffice } from "@/components/AgentOffice";
+import { AgentOffice, deskTitle } from "@/components/AgentOffice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -123,30 +123,58 @@ function AgentCard({ agent, lastRun, runs, onFix, manager = false }: {
   );
 }
 
+const PHASE_LABEL: Record<DepartmentRow["phase"], string> = { hq: "統籌", pre: "上線前", post: "上線後營運" };
+
 function TeamPage() {
   const store = useStore();
   const [fixing, setFixing] = useState<AgentRow | null>(null);
   if (store.error) return <DataError message={store.error} retry={store.retry} />;
   if (store.loading) return <DataSkeleton />;
   const agents = store.getAgents();
-  const manager = agents.find((a) => a.is_manager);
-  const crew = agents.filter((a) => !a.is_manager);
+  const departments = store.getDepartments();
   const runsFor = (id: string) => store.getAgentRuns(id);
   const lastRun = (a: AgentRow) => Math.max(a.last_run_at ? Date.parse(a.last_run_at) : 0, ...runsFor(a.id).map((r) => Date.parse(r.created_at)));
   const counts = { ok: agents.filter((a) => a.status === "ok").length, attention: agents.filter((a) => a.status === "check" || a.status === "broken").length };
   const report = (a: AgentRow, problem: string) => { void store.setAgentStatus(a.id, "check", `修理中：${problem.trim().slice(0, 80)}`); };
+  const known = new Set(departments.map((d) => d.id));
+  const unassigned = agents.filter((a) => !a.department_id || !known.has(a.department_id));
+  const staffed = departments.filter((d) => d.phase !== "hq" && agents.some((a) => a.department_id === d.id)).length;
+  const deptCount = departments.filter((d) => d.phase !== "hq").length;
+
+  const card = (a: AgentRow) => <AgentCard key={a.id} manager={a.is_manager} agent={a} lastRun={lastRun(a)} runs={runsFor(a.id)} onFix={() => setFixing(a)} />;
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">AI 團隊</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{agents.length} 位員工 · {counts.ok} 位正常{counts.attention > 0 && ` · ${counts.attention} 位要看一下`}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {deptCount} 個部門 · {staffed} 個已上班 · {agents.length} 個 skill / 自動化{counts.attention > 0 && ` · ${counts.attention} 個要看一下`}
+        </p>
       </div>
-      <AgentOffice agents={agents} lastRunOf={lastRun} />
-      {manager && <AgentCard manager agent={manager} lastRun={lastRun(manager)} runs={runsFor(manager.id)} onFix={() => setFixing(manager)} />}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {crew.map((a) => <AgentCard key={a.id} agent={a} lastRun={lastRun(a)} runs={runsFor(a.id)} onFix={() => setFixing(a)} />)}
-      </div>
+      <AgentOffice departments={departments} agents={agents} lastRunOf={lastRun} />
+      {departments.map((d) => {
+        const members = agents.filter((a) => a.department_id === d.id);
+        return (
+          <section key={d.id} id={`dept-${d.id}`} className="scroll-mt-24 space-y-3">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border pb-2">
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{PHASE_LABEL[d.phase]}</span>
+              <h2 className="text-lg font-semibold">{deskTitle(d)}</h2>
+              {d.summary && <p className="w-full text-sm text-muted-foreground sm:w-auto sm:flex-1">{d.summary}</p>}
+            </div>
+            {members.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">籌備中：這個部門的 skill 還沒寫。</div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{members.map(card)}</div>
+            )}
+          </section>
+        );
+      })}
+      {unassigned.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="border-b border-border pb-2 text-lg font-semibold">未分部門</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{unassigned.map(card)}</div>
+        </section>
+      )}
       <FixDialog agent={fixing} onClose={() => setFixing(null)} onReported={report} />
     </div>
   );

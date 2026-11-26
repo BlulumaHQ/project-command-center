@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { AgentRow } from "@/data/store";
+import type { AgentRow, DepartmentRow } from "@/data/store";
 import { robotArt } from "@/components/RobotAvatar";
 
 /**
@@ -20,15 +20,18 @@ const BODY: Record<string, string> = {
   atlas: "#1E3A8A", memo: "#14B8A6", rocket: "#F97316", checky: "#22C55E",
   pixel: "#8B5CF6", guido: "#3B82F6", mia: "#EC4899", scout: "#D97706",
   bolt: "#EAB308", compass: "#4F46E5",
+  blueprint: "#2F5FAF", sentinel: "#1E3A8A", justice: "#57534E", echo: "#C2410C",
+  deal: "#1F2937", sunny: "#F59E0B", ally: "#BE8A5C", ledger: "#065F46",
 };
 
-// Desk anchors (head centre). Back row sits higher, front row lower.
-const BACK = [130, 255, 545, 670];
-const FRONT = [110, 255, 400, 545, 690];
+// Desk anchors (head centre): pre-launch departments in the back row, post-launch in the front row,
+// the general manager's office on the left.
+const ROW_X = [270, 410, 550, 690, 830];
 const BACK_Y = 118;
-const FRONT_Y = 196;
+const FRONT_Y = 208;
+const HQ_POS = { x: 110, y: 160 };
 const COFFEE_X = 62;
-const BOARD_X = 625;
+const BOARD_X = 710;
 
 const CSS = `
 .hqo text{font-family:inherit}
@@ -88,14 +91,25 @@ const CSS = `
 .hqo-agent:hover .hqo-head{filter:brightness(1.08)}
 `;
 
-function Desk({ x, y, big = false, screenColor }: { x: number; y: number; big?: boolean; screenColor: string }) {
-  const w = big ? 96 : 76;
+const DESK_THEME = {
+  hq: { panel: "#383838", text: "#FFFFFF", sub: "#D4D4D4" },
+  pre: { panel: "#DCE7F9", text: "#1E3A8A", sub: "#3F5F96" },
+  post: { panel: "#F3ECE0", text: "#6B4E25", sub: "#8A6A3E" },
+} as const;
+
+function Desk({ x, y, big = false, screenColor, phase, title, names }: {
+  x: number; y: number; big?: boolean; screenColor: string; phase: DepartmentRow["phase"]; title: string; names: string;
+}) {
+  const w = big ? 124 : 108;
+  const t = DESK_THEME[phase];
   return (
     <g>
       <rect x={x - w / 2} y={y + 28} width={w} height={8} rx={3} fill="#C8A27A" />
-      <rect x={x - w / 2 + 4} y={y + 36} width={w - 8} height={14} fill="#B38A62" />
-      <rect x={x - w / 2 + 6} y={y + 36} width={4} height={18} fill="#9C7552" />
-      <rect x={x + w / 2 - 10} y={y + 36} width={4} height={18} fill="#9C7552" />
+      <rect x={x - w / 2 + 6} y={y + 52} width={4} height={12} fill="#9C7552" />
+      <rect x={x + w / 2 - 10} y={y + 52} width={4} height={12} fill="#9C7552" />
+      <rect x={x - w / 2 + 3} y={y + 36} width={w - 6} height={26} rx={3} fill={t.panel} />
+      <text x={x} y={y + 47.5} textAnchor="middle" fontSize={9} fontWeight={700} fill={t.text}>{title}</text>
+      <text x={x} y={y + 58} textAnchor="middle" fontSize={7} fill={t.sub}>{names}</text>
       <g transform={`translate(${x + w / 2 - 26},${y + 10})`}>
         <rect x={0} y={0} width={20} height={15} rx={2} fill="#334155" />
         <rect className="hqo-screen" x={2} y={2} width={16} height={11} rx={1} fill={screenColor} />
@@ -330,50 +344,84 @@ function useOfficeLife(agents: AgentRow[], isRecent: (a: AgentRow) => boolean) {
   return acts;
 }
 
-export function AgentOffice({ agents, lastRunOf }: { agents: AgentRow[]; lastRunOf: (a: AgentRow) => number }) {
-  const manager = agents.find((a) => a.is_manager);
-  const crew = agents.filter((a) => !a.is_manager);
-  const slots = [...BACK.map((x) => ({ x, y: BACK_Y })), ...FRONT.map((x) => ({ x, y: FRONT_Y }))];
-  const placed = crew.slice(0, slots.length).map((a, i) => ({ a, ...slots[i]! }));
-  if (manager) placed.unshift({ a: manager, x: 400, y: BACK_Y });
+interface DeskSlot { dept: DepartmentRow; bot: AgentRow; names: string; x: number; y: number; recentAt: number }
+
+function deptStatus(members: AgentRow[]): AgentRow["status"] {
+  if (members.some((a) => a.status === "broken")) return "broken";
+  if (members.some((a) => a.status === "check")) return "check";
+  if (members.some((a) => a.status === "ok")) return "ok";
+  return "idle";
+}
+
+export function deskTitle(d: DepartmentRow) {
+  return d.num ? `${String(d.num).padStart(2, "0")} ${d.name_zh}` : d.name_zh;
+}
+
+/** One desk per department: the robot is the department, the desk shows its number, name and one or two of its skills. */
+export function AgentOffice({ departments, agents, lastRunOf }: {
+  departments: DepartmentRow[]; agents: AgentRow[]; lastRunOf: (a: AgentRow) => number;
+}) {
+  const pre = departments.filter((d) => d.phase === "pre");
+  const post = departments.filter((d) => d.phase === "post");
+  const hq = departments.find((d) => d.phase === "hq");
+  const slotFor = (d: DepartmentRow, x: number, y: number): DeskSlot => {
+    const members = agents.filter((a) => a.department_id === d.id);
+    const shown = members.filter((a) => !a.is_manager).slice(0, 2).map((a) => a.name);
+    const recentAt = Math.max(0, ...members.map(lastRunOf));
+    const bot: AgentRow = {
+      id: `dept-${d.id}`, name: d.name_zh, name_zh: "", role: d.summary ?? "", skill: null, trigger_hint: null,
+      avatar: d.avatar, is_manager: d.phase === "hq", status: deptStatus(members), status_note: null,
+      last_run_at: null, sort: d.sort, department_id: d.id,
+    };
+    return { dept: d, bot, names: shown.length ? shown.join(" · ") : "籌備中", x, y, recentAt };
+  };
+  const slots: DeskSlot[] = [
+    ...(hq ? [slotFor(hq, HQ_POS.x, HQ_POS.y)] : []),
+    ...pre.slice(0, 5).map((d, i) => slotFor(d, ROW_X[i]!, BACK_Y)),
+    ...post.slice(0, 5).map((d, i) => slotFor(d, ROW_X[i]!, FRONT_Y)),
+  ];
   const now = Date.now();
-  const isRecent = (a: AgentRow) => now - lastRunOf(a) < 30 * 60 * 1000;
-  const acts = useOfficeLife(agents, isRecent);
+  const recentOf = new Map(slots.map((s) => [s.bot.id, now - s.recentAt < 30 * 60 * 1000]));
+  const isRecent = (a: AgentRow) => recentOf.get(a.id) ?? false;
+  const bots = slots.map((s) => s.bot);
+  const acts = useOfficeLife(bots, isRecent);
   const scroller = useCenteredScroll();
-  if (agents.length === 0) return null;
-  const pick = (id: string) => document.getElementById(`agent-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const robotFor = (a: AgentRow, x: number) => {
-    const st = acts[a.id];
+  if (slots.length === 0) return null;
+  const pick = (id: string) => document.getElementById(`dept-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const robotFor = (s: DeskSlot) => {
+    const st = acts[s.bot.id];
     const action = st?.action ?? "work";
-    const dx = action === "coffee" ? COFFEE_X - x : action === "board" ? BOARD_X - x : 0;
-    return <Robot agent={a} recent={isRecent(a)} action={action} actKey={st?.key ?? 0} dx={dx} onPick={() => pick(a.id)} />;
+    const dx = action === "coffee" ? COFFEE_X - s.x : action === "board" ? BOARD_X - s.x : 0;
+    return <Robot agent={s.bot} recent={isRecent(s.bot)} action={action} actKey={st?.key ?? 0} dx={dx} onPick={() => pick(s.dept.id)} />;
   };
   const screen = (a: AgentRow) => a.status === "broken" ? "#FCA5A5" : a.status === "idle" ? "#1E293B" : "#7DD3FC";
+  // Draw back to front so front-row robots overlap the desks behind them.
+  const ordered = [...slots].sort((a, b) => a.y - b.y);
 
   return (
     <section className="panel overflow-hidden p-0" aria-label="AI 團隊辦公室動畫">
       <style>{CSS}</style>
       <div ref={scroller} className="overflow-x-auto overscroll-x-contain sm:overflow-visible">
-      <svg className="hqo block h-auto w-full min-w-[620px] sm:min-w-0" viewBox="0 0 800 262" role="img">
+      <svg className="hqo block h-auto w-full min-w-[760px] sm:min-w-0" viewBox="0 0 960 290" role="img">
         <title>AI 團隊辦公室</title>
-        <rect width={800} height={112} fill="#EEF2F7" />
-        <rect y={112} width={800} height={150} fill="#F6F1E8" />
-        <rect y={108} width={800} height={5} fill="#D7DEE8" />
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <rect key={i} x={i * 100} y={113} width={1} height={157} fill="#EDE6D9" />)}
+        <rect width={960} height={112} fill="#EEF2F7" />
+        <rect y={112} width={960} height={178} fill="#F6F1E8" />
+        <rect y={108} width={960} height={5} fill="#D7DEE8" />
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => <rect key={i} x={i * 100} y={113} width={1} height={177} fill="#EDE6D9" />)}
 
-        <g transform="translate(170,20)">
+        <g transform="translate(320,20)">
           <rect width={130} height={64} rx={4} fill="#BFDBFE" stroke="#94A3B8" strokeWidth={2} />
           <path d="M8,64 V38 h14 V28 h16 V64 M46,64 V20 h18 V64 M72,64 V34 h12 V24 h14 V64 M104,64 V40 h18 V64" fill="#93C5FD" />
           <rect x={64} width={2} height={64} fill="#94A3B8" />
           <rect y={31} width={130} height={2} fill="#94A3B8" />
         </g>
 
-        <g transform="translate(560,18)">
+        <g transform="translate(640,18)">
           <rect width={140} height={70} rx={4} fill="#FFFFFF" stroke="#CBD5E1" strokeWidth={2} />
           <text x={12} y={20} fontSize={11} fontWeight={700} fill="#1E3A8A">Bluluma HQ</text>
           <path d="M12,34 h40 M12,44 h60 M12,54 h30" stroke="#94A3B8" strokeWidth={2} strokeLinecap="round" />
-          <rect x={90} y={28} width={10} height={30} fill="#86EFAC" />
-          <rect x={104} y={38} width={10} height={20} fill="#FDBA74" />
+          <rect x={90} y={28} width={10} height={30} fill="#5887DA" />
+          <rect x={104} y={38} width={10} height={20} fill="#B08D5B" />
           <rect x={118} y={22} width={10} height={36} fill="#93C5FD" />
         </g>
 
@@ -386,22 +434,16 @@ export function AgentOffice({ agents, lastRunOf }: { agents: AgentRow[]; lastRun
           <circle className="hqo-steam" cx={50} cy={30} r={2.5} fill="#CBD5E1" />
         </g>
 
-        <g transform="translate(752,150)">
+        <g transform="translate(925,150)">
           <rect x={-12} y={20} width={24} height={22} rx={3} fill="#B45309" />
           <ellipse cx={-8} cy={10} rx={9} ry={16} fill="#22C55E" transform="rotate(-20 -8 10)" />
           <ellipse cx={8} cy={8} rx={9} ry={17} fill="#16A34A" transform="rotate(18 8 8)" />
         </g>
 
-        {placed.filter((p) => p.y === BACK_Y).map(({ a, x, y }) => (
-          <g key={a.id}>
-            <g transform={`translate(${x},${y})`}>{robotFor(a, x)}</g>
-            <Desk x={x} y={y} big={a.is_manager} screenColor={screen(a)} />
-          </g>
-        ))}
-        {placed.filter((p) => p.y === FRONT_Y).map(({ a, x, y }) => (
-          <g key={a.id}>
-            <g transform={`translate(${x},${y})`}>{robotFor(a, x)}</g>
-            <Desk x={x} y={y} screenColor={screen(a)} />
+        {ordered.map((s) => (
+          <g key={s.dept.id}>
+            <g transform={`translate(${s.x},${s.y})`}>{robotFor(s)}</g>
+            <Desk x={s.x} y={s.y} big={s.dept.phase === "hq"} screenColor={screen(s.bot)} phase={s.dept.phase} title={deskTitle(s.dept)} names={s.names} />
           </g>
         ))}
       </svg>
