@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, ChevronDown, CircleCheck, ExternalLink, Pause, Play, TriangleAlert, X } from "lucide-react";
+import { Check, ChevronDown, CircleCheck, ExternalLink, Pause, Play, TriangleAlert, Undo2, X } from "lucide-react";
 import { useState } from "react";
-import { useAutopilot, type ProposalRow } from "@/data/autopilot";
+import { choiceLabel, useAutopilot, type ProposalRow } from "@/data/autopilot";
 import { useStore } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { relativeActivityTime } from "@/data/mapping";
@@ -38,21 +38,25 @@ function Section({ title, count, children }: { title: string; count?: number; ch
   );
 }
 
+/** Tapping an option only selects it; nothing is saved until 「確定」 is pressed. */
 function DecisionCard({ p, projectName, onAnswer }: { p: ProposalRow; projectName?: string | undefined; onAnswer: (choice: string, note: string) => void }) {
   const [note, setNote] = useState("");
   const [writing, setWriting] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const pickedOption = p.options.find((o) => o.key === picked);
   return (
     <article className="panel p-4 sm:p-5">
       {projectName && <p className="text-xs font-medium text-muted-foreground">{projectName}</p>}
       <h3 className="mt-1 font-semibold leading-snug">{p.question}</h3>
       {p.reason && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{p.reason}</p>}
-      <div className="mt-3 grid gap-2">
+      <div className="mt-3 grid gap-2" role="radiogroup" aria-label={p.question}>
         {p.options.map((o) => {
           const rec = o.key === p.recommended;
+          const on = o.key === picked;
           return (
-            <button key={o.key} type="button" onClick={() => onAnswer(o.key, note)}
-              className={cn("flex min-h-14 w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-accent", rec ? "border-primary bg-primary/5" : "border-border")}>
-              <span className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold", rec ? "bg-primary text-primary-foreground" : "bg-muted")}>{o.key}</span>
+            <button key={o.key} type="button" role="radio" aria-checked={on} onClick={() => setPicked(on ? null : o.key)}
+              className={cn("flex min-h-14 w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-accent", on ? "border-primary bg-primary/10 ring-2 ring-primary" : "border-border")}>
+              <span className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold", on ? "bg-primary text-primary-foreground" : "bg-muted")}>{on ? <Check className="h-4 w-4" /> : o.key}</span>
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2 text-sm font-medium">{o.label}{rec && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">推薦</span>}</span>
                 {o.detail && <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{o.detail}</span>}
@@ -62,11 +66,47 @@ function DecisionCard({ p, projectName, onAnswer }: { p: ProposalRow; projectNam
         })}
       </div>
       {writing && <Textarea className="mt-3" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="給主管的意見（選了方案後一起送出）" autoFocus />}
-      <div className="mt-3 flex gap-2">
-        <Button variant="ghost" className="h-10 flex-1" onClick={() => setWriting((v) => !v)}>{writing ? "收起意見" : "寫意見"}</Button>
-        <Button variant="ghost" className="h-10 flex-1 text-muted-foreground" onClick={() => onAnswer("skip", note)}>先不要</Button>
-      </div>
+      {picked ? (
+        <div className="mt-3 rounded-xl bg-muted p-3">
+          <p className="text-sm">確定要選 <span className="font-semibold">{picked === "skip" ? "先不要" : `${pickedOption?.key} · ${pickedOption?.label}`}</span> 嗎？</p>
+          <div className="mt-2 flex gap-2">
+            <Button className="h-10 flex-1" onClick={() => onAnswer(picked, note)}>確定</Button>
+            <Button variant="outline" className="h-10 flex-1" onClick={() => setPicked(null)}>取消</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex gap-2">
+          <Button variant="ghost" className="h-10 flex-1" onClick={() => setWriting((v) => !v)}>{writing ? "收起意見" : "寫意見"}</Button>
+          <Button variant="ghost" className="h-10 flex-1 text-muted-foreground" onClick={() => setPicked("skip")}>先不要</Button>
+        </div>
+      )}
     </article>
+  );
+}
+
+/** 做完了嗎？ row: ✓ / ✗ only arm the answer; 「確定」 saves it. */
+function ConfirmRow({ p, onAnswer }: { p: ProposalRow; onAnswer: (choice: string) => void }) {
+  const [armed, setArmed] = useState<"yes" | "no" | null>(null);
+  return (
+    <div className="p-3">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium leading-snug">{p.question.replace(/做完了嗎？?$/, "")}</p>
+          {p.reason && <p className="mt-0.5 text-xs text-muted-foreground">{p.reason}</p>}
+        </div>
+        {!armed && <>
+          <Button size="icon" variant="outline" className="h-11 w-11 shrink-0" aria-label="做完了" onClick={() => setArmed("yes")}><Check className="h-5 w-5" /></Button>
+          <Button size="icon" variant="ghost" className="h-11 w-11 shrink-0" aria-label="還沒" onClick={() => setArmed("no")}><X className="h-5 w-5" /></Button>
+        </>}
+      </div>
+      {armed && (
+        <div className="mt-2 flex items-center gap-2 rounded-xl bg-muted p-2.5">
+          <p className="flex-1 text-sm">確定是「<span className="font-semibold">{armed === "yes" ? "做完了" : "還沒"}</span>」？</p>
+          <Button className="h-10" onClick={() => onAnswer(armed)}>確定</Button>
+          <Button variant="outline" className="h-10" onClick={() => setArmed(null)}>取消</Button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -116,17 +156,27 @@ function MorningPage() {
       {ap.confirms.length > 0 && (
         <Section title="做完了嗎？" count={ap.confirms.length}>
           <div className="panel divide-y divide-border">
-            {ap.confirms.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium leading-snug">{p.question.replace(/做完了嗎？?$/, "")}</p>
-                  {p.reason && <p className="mt-0.5 text-xs text-muted-foreground">{p.reason}</p>}
-                </div>
-                <Button size="icon" variant="outline" className="h-11 w-11 shrink-0" aria-label="做完了" onClick={() => void ap.answer(p, "yes")}><Check className="h-5 w-5" /></Button>
-                <Button size="icon" variant="ghost" className="h-11 w-11 shrink-0" aria-label="還沒" onClick={() => void ap.answer(p, "no")}><X className="h-5 w-5" /></Button>
-              </div>
-            ))}
+            {ap.confirms.map((p) => <ConfirmRow key={p.id} p={p} onAnswer={(c) => void ap.answer(p, c)} />)}
           </div>
+        </Section>
+      )}
+
+      {ap.answered.length > 0 && (
+        <Section title="你最近的回答" count={ap.answered.length}>
+          <ul className="panel divide-y divide-border">
+            {ap.answered.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 p-3">
+                <div className="min-w-0 flex-1">
+                  {p.project_id && <p className="text-xs text-muted-foreground">{nameOf(p.project_id)}</p>}
+                  <p className="text-sm leading-snug">{p.kind === "confirm_done" ? p.question.replace(/做完了嗎？?$/, "") : p.question}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-primary">{choiceLabel(p)}</p>
+                  {p.sony_note && <p className="mt-0.5 text-xs text-muted-foreground">意見：{p.sony_note}</p>}
+                </div>
+                <Button variant="outline" className="h-10 shrink-0" onClick={() => void ap.undo(p)}><Undo2 className="h-4 w-4" />改回</Button>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">按「改回」會回到上面重新選；過去 2 天的回答都可以改。</p>
         </Section>
       )}
 

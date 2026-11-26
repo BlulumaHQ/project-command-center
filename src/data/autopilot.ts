@@ -38,6 +38,21 @@ export function runHealth(runs: RunRow[], now = Date.now()) {
   return { recent, problems, ok: recent.length > 0 && problems.length === 0 };
 }
 
+/** Pure helper: what undoing an answer must put back. Exported for tests. */
+export function undoPlan(p: ProposalRow) {
+  const ids = [...new Set([...(p.task_ids ?? []), ...p.options.flatMap((o) => o.task_ids ?? [])])];
+  if (p.kind === "confirm_done") return { reopenTasks: p.choice === "yes" ? (p.task_ids ?? []) : [], resetApproval: [] as string[] };
+  return { reopenTasks: [] as string[], resetApproval: ids };
+}
+
+/** Label shown for an answered proposal, e.g. "A · 12/15 前 100 位註冊用戶". */
+export function choiceLabel(p: ProposalRow) {
+  if (p.choice === "skip") return "先不要";
+  if (p.kind === "confirm_done") return p.choice === "yes" ? "做完了" : "還沒";
+  const o = p.options.find((x) => x.key === p.choice);
+  return o ? `${o.key} · ${o.label}` : (p.choice ?? "");
+}
+
 export function useAutopilot() {
   const { user, ready } = useAuth();
   const client = useQueryClient();
@@ -79,6 +94,21 @@ export function useAutopilot() {
     } finally { refresh(); }
   };
 
+  /** Put an answered proposal back to open and revert what answering changed on its tasks. */
+  const undo = async (p: ProposalRow) => {
+    client.setQueryData<ProposalRow[]>(key("proposals"), (list) => (list ?? []).map((x) => x.id === p.id ? { ...x, status: "open", choice: null, sony_note: null, answered_at: null } : x));
+    try {
+      const { error } = await supabase.from("pcc_proposals").update({ status: "open", choice: null, sony_note: null, answered_at: null }).eq("id", p.id).eq("status", "answered");
+      if (error) throw error;
+      const plan = undoPlan(p);
+      if (plan.resetApproval.length) { const { error: e } = await supabase.from("pcc_tasks").update({ approval: "needed" }).in("id", plan.resetApproval); if (e) throw e; }
+      if (plan.reopenTasks.length) { const { error: e } = await supabase.from("pcc_tasks").update({ status: "todo", done: false, done_at: null, evidence: null }).in("id", plan.reopenTasks); if (e) throw e; }
+      toast.success("已改回，可以重新選");
+    } catch (e) {
+      toast.error(`改回失敗：${e instanceof Error ? e.message : String(e)}`);
+    } finally { refresh(); }
+  };
+
   const setPaused = async (paused: boolean) => {
     const value = { ...settings, paused };
     client.setQueryData(key("settings"), { value });
@@ -97,6 +127,7 @@ export function useAutopilot() {
     settings,
     setPaused,
     answer,
+    undo,
     decisions: proposals.filter((p) => p.status === "open" && p.kind === "decision"),
     confirms: proposals.filter((p) => p.status === "open" && p.kind === "confirm_done"),
     answered: proposals.filter((p) => p.status === "answered"),
