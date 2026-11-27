@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActRouteImport } from './routes/act'
 import { Route as BoardRouteImport } from './routes/board'
 import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as LearnRouteImport } from './routes/learn'
@@ -31,6 +32,11 @@ import { Route as ProjectIdRouteImport } from './routes/project.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActRoute = ActRouteImport.update({
+  id: '/act',
+  path: '/act',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardRoute = BoardRouteImport.update({
@@ -121,6 +127,7 @@ const ProjectIdRoute = ProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/act': typeof ActRoute
   '/board': typeof BoardRoute
   '/clients': typeof ClientsRoute
   '/learn': typeof LearnRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/act': typeof ActRoute
   '/board': typeof BoardRoute
   '/clients': typeof ClientsRoute
   '/learn': typeof LearnRoute
@@ -162,6 +170,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/act': typeof ActRoute
   '/board': typeof BoardRoute
   '/clients': typeof ClientsRoute
   '/learn': typeof LearnRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/act'
     | '/board'
     | '/clients'
     | '/learn'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/act'
     | '/board'
     | '/clients'
     | '/learn'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/act'
     | '/board'
     | '/clients'
     | '/learn'
@@ -245,6 +257,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActRoute: typeof ActRoute
   BoardRoute: typeof BoardRoute
   ClientsRoute: typeof ClientsRoute
   LearnRoute: typeof LearnRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/act': {
+      id: '/act'
+      path: '/act'
+      fullPath: '/act'
+      preLoaderRoute: typeof ActRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/board': {
@@ -397,6 +417,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActRoute: ActRoute,
   BoardRoute: BoardRoute,
   ClientsRoute: ClientsRoute,
   LearnRoute: LearnRoute,

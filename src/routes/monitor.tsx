@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, ChevronDown, ExternalLink, Mail, Plus, RefreshCw, Smartphone, X } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, ChevronDown, ExternalLink, Mail, Plus, RefreshCw, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
@@ -70,10 +70,12 @@ function Dot({ light, pulse }: { light: Light; pulse?: boolean }) {
 function AlertCard({
   alert,
   onResolve,
+  onMute,
   busy,
 }: {
   alert: AlertRow;
   onResolve: () => void;
+  onMute?: (() => void) | undefined;
   busy: boolean;
 }) {
   return (
@@ -107,15 +109,28 @@ function AlertCard({
           </div>
         </div>
       </div>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={onResolve}
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition hover:bg-muted disabled:opacity-50 sm:w-auto sm:px-4"
-      >
-        <CheckCircle2 className="h-4 w-4" />
-        我處理好了
-      </button>
+      <div className="mt-3 grid gap-2 sm:flex">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onResolve}
+          className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition hover:bg-muted disabled:opacity-50 sm:w-auto sm:px-4"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          我處理好了
+        </button>
+        {onMute && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onMute}
+            className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl border text-sm font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50 sm:w-auto sm:px-4"
+          >
+            <BellOff className="h-4 w-4" />
+            不用理，不再通報
+          </button>
+        )}
+      </div>
     </li>
   );
 }
@@ -254,20 +269,33 @@ function siteNotes(s: SiteRow) {
   const d = daysLeft(s.domain_expires);
   if (d !== null) notes.push(d < 60 ? `網域剩 ${d} 天` : `網域 ${s.domain_expires} 到期`);
   if (!s.managed) notes.push("觀察中・不發警示");
+  if (s.muted_at) notes.unshift("不用理・不通報");
   return notes;
 }
 
-function SiteItem({ s, onRemove }: { s: SiteRow; onRemove: () => void }) {
-  const light = lightOf(s.status);
+function SiteItem({
+  s,
+  onRemove,
+  onMute,
+  onUnmute,
+}: {
+  s: SiteRow;
+  onRemove: () => void;
+  onMute: () => void;
+  onUnmute: () => void;
+}) {
+  const muted = Boolean(s.muted_at);
+  const light = muted ? { ...GREY, label: "不用理" } : lightOf(s.status);
+  const canMute = !muted && s.managed && (s.status === "red" || s.status === "yellow");
   return (
-    <li className="flex items-start gap-3 px-4 py-3">
+    <li className={cn("flex items-start gap-3 px-4 py-3", muted && "opacity-70")}>
       <span className="pt-1.5">
-        <SiteDot s={s.status} />
+        <SiteDot s={muted ? "grey" : s.status} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <p className="truncate font-medium">{s.name}</p>
-          {s.status !== "green" && (
+          {(muted || s.status !== "green") && (
             <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", light.tone)}>{light.label}</span>
           )}
         </div>
@@ -281,6 +309,16 @@ function SiteItem({ s, onRemove }: { s: SiteRow; onRemove: () => void }) {
           <ExternalLink className="h-3 w-3" />
         </a>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{siteNotes(s).join(" · ")}</p>
+        {(canMute || muted) && (
+          <button
+            type="button"
+            onClick={muted ? onUnmute : onMute}
+            className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {muted ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+            {muted ? "恢復監控" : "不用理，不再通報"}
+          </button>
+        )}
       </div>
       <button
         type="button"
@@ -390,11 +428,12 @@ function CronList({ jobs }: { jobs: CronRow[] }) {
   );
 }
 
-function MonAlertCard({ alert, onResolve, busy }: { alert: MonAlertRow; onResolve: () => void; busy: boolean }) {
+function MonAlertCard({ alert, onResolve, onMute, busy }: { alert: MonAlertRow; onResolve: () => void; onMute?: (() => void) | undefined; busy: boolean }) {
   return (
     <AlertCard
       alert={{ ...alert, monitor_id: alert.ref } as unknown as AlertRow}
       onResolve={onResolve}
+      onMute={onMute}
       busy={busy}
     />
   );
@@ -420,7 +459,19 @@ function MonitorPage() {
   const active = new Set(nc.data.monitors.map((m) => m.id));
   const ncOpen = nc.data.alerts.filter((a) => !a.resolved_at && active.has(a.monitor_id));
   const sites = mon.data.sites;
-  const managed = sites.filter((s) => s.managed);
+  const managed = sites.filter((s) => s.managed && !s.muted_at);
+  const mutedCount = sites.filter((s) => s.muted_at).length;
+  const mute = (domain: string) => {
+    const site = sites.find((x) => x.domain === domain);
+    const level = site?.status === "yellow" ? "yellow" : "red";
+    mon.muteSite.mutate(
+      { domain, level },
+      {
+        onSuccess: () => toast.success(`${site?.name ?? domain} 不用理了，之後不會再通報`),
+        onError: (e) => toast.error(e.message),
+      },
+    );
+  };
   const siteBad = managed.filter((s) => s.status === "red" || s.status === "yellow");
   const ncBad = nc.data.monitors.filter((m) => m.status !== "green");
   const jobBad = mon.data.jobs.filter((j) => j.active && cronLight(j) !== "green");
@@ -433,7 +484,13 @@ function MonitorPage() {
   const order: Record<SiteLight, number> = { red: 0, yellow: 1, grey: 2, green: 3 };
   const shown = sites
     .filter((s) => s.grp === tab)
-    .sort((a, b) => Number(b.managed) - Number(a.managed) || order[a.status] - order[b.status] || a.name.localeCompare(b.name));
+    .sort(
+      (a, b) =>
+        Number(Boolean(a.muted_at)) - Number(Boolean(b.muted_at)) ||
+        Number(b.managed) - Number(a.managed) ||
+        order[a.status] - order[b.status] ||
+        a.name.localeCompare(b.name),
+    );
   const count = (g: "own" | "client") => sites.filter((s) => s.grp === g).length;
   const totalAlerts = ncOpen.length + mon.data.alerts.length;
 
@@ -453,7 +510,7 @@ function MonitorPage() {
             {badCount === 0 ? "全部正常" : `${badCount} 個要看一下`}
           </p>
           <p className="text-xs text-muted-foreground">
-            {sites.length} 個網站 · {nc.data.monitors.length} 個同步 · {mon.data.jobs.length} 個排程 · 上次檢查 {ago(lastCheck)}
+            {sites.length} 個網站 · {nc.data.monitors.length} 個同步 · {mon.data.jobs.length} 個排程{mutedCount ? ` · 不用理 ${mutedCount} 個` : ""} · 上次檢查 {ago(lastCheck)}
           </p>
         </div>
         <button
@@ -477,7 +534,13 @@ function MonitorPage() {
           <SectionTitle>未處理的警示</SectionTitle>
           <ul className="space-y-3">
             {mon.data.alerts.map((a) => (
-              <MonAlertCard key={`m${a.id}`} alert={a} busy={mon.resolveAlert.isPending} onResolve={() => mon.resolveAlert.mutate(a.id)} />
+              <MonAlertCard
+                key={`m${a.id}`}
+                alert={a}
+                busy={mon.resolveAlert.isPending || mon.muteSite.isPending}
+                onResolve={() => mon.resolveAlert.mutate(a.id)}
+                onMute={a.kind === "site" ? () => mute(a.ref) : undefined}
+              />
             ))}
             {ncOpen.map((a) => (
               <AlertCard key={`n${a.id}`} alert={a} busy={nc.resolve.isPending} onResolve={() => nc.resolve.mutate(a.id)} />
@@ -517,6 +580,13 @@ function MonitorPage() {
                   onRemove={() => {
                     if (window.confirm(`停止監控 ${s.name}？`)) mon.removeSite.mutate(s.domain);
                   }}
+                  onMute={() => mute(s.domain)}
+                  onUnmute={() =>
+                    mon.unmuteSite.mutate(s.domain, {
+                      onSuccess: () => toast.success(`${s.name} 恢復監控`),
+                      onError: (e) => toast.error(e.message),
+                    })
+                  }
                 />
               ))}
             </ul>

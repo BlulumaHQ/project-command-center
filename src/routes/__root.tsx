@@ -144,7 +144,8 @@ function RootComponent() {
 }
 
 function AppLayout() {
-  const loginPage = useRouterState({ select: (s) => s.location.pathname === "/login" });
+  // /login and /act (one-tap buttons from the 晨報 email) render without the app shell or a login.
+  const loginPage = useRouterState({ select: (s) => s.location.pathname === "/login" || s.location.pathname === "/act" });
   const { user, ready } = useAuth();
   const signedIn = !loginPage && ready && Boolean(user);
   return <>

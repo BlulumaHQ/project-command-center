@@ -110,6 +110,9 @@ export interface SiteRow {
   last_ok_at: string | null;
   down_since: string | null;
   domain_expires: string | null;
+  /** 「不用理」: set when Sony decided this site needs no alerts (still shown, greyed). */
+  muted_at: string | null;
+  muted_level: "red" | "yellow" | null;
 }
 export interface MonAlertRow {
   id: number;
@@ -195,5 +198,30 @@ export function useSiteMonitor() {
     },
     onSettled: refresh,
   });
-  return { ...query, resolveAlert, runNow, addSite, removeSite };
+  /** 「不用理」: stop alerting for this site (only a worse level would alert again) and close its open alerts. */
+  const muteSite = useMutation({
+    mutationFn: async (s: { domain: string; level: "red" | "yellow" }) => {
+      const { error } = await supabase
+        .from("mon_sites")
+        .update({ muted_at: new Date().toISOString(), muted_level: s.level })
+        .eq("domain", s.domain);
+      if (error) throw new Error(error.message);
+      const { error: e2 } = await supabase
+        .from("mon_alerts")
+        .update({ resolved_at: new Date().toISOString() })
+        .eq("kind", "site")
+        .eq("ref", s.domain)
+        .is("resolved_at", null);
+      if (e2) throw new Error(e2.message);
+    },
+    onSettled: refresh,
+  });
+  const unmuteSite = useMutation({
+    mutationFn: async (domain: string) => {
+      const { error } = await supabase.from("mon_sites").update({ muted_at: null, muted_level: null }).eq("domain", domain);
+      if (error) throw new Error(error.message);
+    },
+    onSettled: refresh,
+  });
+  return { ...query, resolveAlert, runNow, addSite, removeSite, muteSite, unmuteSite };
 }
