@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, ExternalLink, Loader2, Plus, Send } from "lucide-react";
+import { ArrowRight, Loader2, Plus, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { requireSignedIn } from "@/lib/auth";
-import { DIRECTORS, meetingPrompt, type Director } from "@/lib/board";
+import { DIRECTORS, type Director } from "@/lib/board";
 import { useBoard, type BoardTurn, type MeetingRow } from "@/data/board-store";
 import { BoardRoom } from "@/components/BoardRoom";
 import { RobotAvatar } from "@/components/RobotAvatar";
@@ -179,12 +179,6 @@ function BoardPage() {
       },
     );
   };
-  const openInClaude = () =>
-    window.open(
-      `https://claude.ai/new?q=${encodeURIComponent(meetingPrompt(topic, picked))}`,
-      "_blank",
-      "noopener",
-    );
 
   return (
     <div className="space-y-5">
@@ -237,20 +231,10 @@ function BoardPage() {
             {seated.length} 位董事討論中…大約 30–60 秒
           </div>
         ) : (
-          <div className="grid gap-2 sm:grid-cols-[2fr_1fr]">
-            <Button className="h-11" disabled={!topic.trim()} onClick={start}>
-              <Send className="h-4 w-4" />
-              {active ? "追問" : "開會"}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-11"
-              disabled={!topic.trim()}
-              onClick={openInClaude}
-            >
-              <ExternalLink className="h-4 w-4" />在 Claude 開會
-            </Button>
-          </div>
+          <Button className="h-11 w-full" disabled={!topic.trim()} onClick={start}>
+            <Send className="h-4 w-4" />
+            {active ? "追問" : "開會"}
+          </Button>
         )}
       </section>
 
