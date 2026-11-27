@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { requireSignedIn } from "@/lib/auth";
 import { MASK, NotConnected, RevealButton } from "@/components/ui-bits";
+import { AiCostSection } from "@/components/AiCostSection";
 
 export const Route = createFileRoute("/money")({
   ssr: false,
@@ -80,6 +81,8 @@ function MoneyPage() {
           </div>
         ))}
       </div>
+
+      <AiCostSection shown={shown} />
 
       <section className="panel p-5">
         <div className="flex items-center justify-between gap-3">

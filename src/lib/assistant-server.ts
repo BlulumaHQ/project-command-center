@@ -5,6 +5,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabase";
 
 const MODEL = "claude-sonnet-5-5";
 const MAX_TURNS = 6;
+const FEATURE = "hq-assistant";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type AssistantReply = { text: string; actions: string[] };
@@ -290,6 +291,43 @@ export async function runAssistant(
     };
   }
 
+  // AI 成本帳: monthly budget check before, one usage row after (pcc_ai_usage, feature 'hq-assistant').
+  const { data: budgetOk } = await db.rpc("pcc_ai_budget_ok", { p_feature: FEATURE });
+  if (budgetOk === false) {
+    return { text: "本月 HQ 助理的 AI 預算已用完（財務 → AI 成本可以調整上限）。", actions: [] };
+  }
+  const usage = { input: 0, cached: 0, output: 0 };
+  const lastUser = messages[messages.length - 1]?.content ?? "";
+  let failed: string | null = null;
+  try {
+    return await runLoop(db, apiKey, messages, usage, (e) => (failed = e));
+  } finally {
+    if (usage.input + usage.output > 0 || failed) {
+      await db.rpc("pcc_log_ai_usage", {
+        p_provider: "anthropic",
+        p_model: MODEL,
+        p_feature: FEATURE,
+        p_kind: "text",
+        p_input_tokens: usage.input,
+        p_cached_input_tokens: usage.cached,
+        p_output_tokens: usage.output,
+        p_summary: `HQ 助理：${lastUser.slice(0, 100)}`,
+        p_status: failed ? "error" : "ok",
+        p_error: failed,
+      });
+    }
+  }
+}
+
+type Usage = { input: number; cached: number; output: number };
+
+async function runLoop(
+  db: SupabaseClient,
+  apiKey: string,
+  messages: ChatMessage[],
+  usage: Usage,
+  onError: (e: string) => void,
+): Promise<AssistantReply> {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Vancouver" }).format(
     new Date(),
   );
@@ -317,9 +355,22 @@ export async function runAssistant(
     if (!res.ok) {
       const detail = await res.text();
       console.error("anthropic error", res.status, detail);
+      onError(`${res.status} ${detail.slice(0, 200)}`);
       return { text: `HQ 助理暫時連不上（${res.status}）。`, actions };
     }
-    const body = (await res.json()) as { content: ContentBlock[]; stop_reason: string };
+    const body = (await res.json()) as {
+      content: ContentBlock[];
+      stop_reason: string;
+      usage?: {
+        input_tokens?: number;
+        output_tokens?: number;
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+      };
+    };
+    usage.input += (body.usage?.input_tokens ?? 0) + (body.usage?.cache_creation_input_tokens ?? 0);
+    usage.cached += body.usage?.cache_read_input_tokens ?? 0;
+    usage.output += body.usage?.output_tokens ?? 0;
     convo.push({ role: "assistant", content: body.content });
     const uses = body.content.filter(
       (b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use",
