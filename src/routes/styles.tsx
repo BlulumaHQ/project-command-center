@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Check, Copy, Search } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, ImageOff, Search } from "lucide-react";
 import { requireSignedIn } from "@/lib/auth";
 import { StylePreview } from "@/components/StylePreview";
 import { LogoDemo } from "@/components/LogoDemo";
@@ -18,15 +18,16 @@ import {
   type Style,
 } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { ART_FOLLOWUP_PROMPT, ILLUS_STYLES, illusImg, type IllusStyle } from "@/lib/illustration-styles";
 
-type Tab = "web" | "print" | "logo";
+type Tab = "web" | "print" | "logo" | "illus";
 type Search = { tab?: Tab | undefined; s?: string | undefined };
 
 export const Route = createFileRoute("/styles")({
   ssr: false,
   beforeLoad: requireSignedIn,
   validateSearch: (search: Record<string, unknown>): Search => ({
-    tab: search["tab"] === "print" || search["tab"] === "logo" ? search["tab"] : undefined,
+    tab: search["tab"] === "print" || search["tab"] === "logo" || search["tab"] === "illus" ? search["tab"] : undefined,
     s: typeof search["s"] === "string" ? search["s"] : undefined,
   }),
   head: () => ({
@@ -44,6 +45,7 @@ const TABS: { id: Tab; label: string; count: number }[] = [
   { id: "web", label: "Web", count: WEB_STYLES.length },
   { id: "print", label: "Print", count: PRINT_STYLES.length },
   { id: "logo", label: "Logo", count: LOGO_TYPES.length + LOGO_STYLES.length },
+  { id: "illus", label: "插畫", count: ILLUS_STYLES.length },
 ];
 
 function CopyKeyword({ text }: { text: string }) {
@@ -333,13 +335,130 @@ function LogoTab() {
   );
 }
 
+
+function CopyBlock({ label, text }: { label: string; text: string }) {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="panel space-y-3 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            } catch {
+              /* clipboard unavailable */
+            }
+          }}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-ink px-4 text-sm font-semibold text-ink-foreground"
+        >
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "已複製" : "Copy"}
+        </button>
+      </div>
+      <p className={cn("whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground", !open && "line-clamp-4")}>{text}</p>
+      {text.length > 280 && (
+        <button type="button" onClick={() => setOpen((o) => !o)} className="min-h-10 text-sm font-semibold">
+          {open ? "收起" : "展開全文"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function IllusImage({ style, kind, label, ratio }: { style: IllusStyle; kind: "before" | "compare" | "art"; label: string; ratio: string }) {
+  return (
+    <figure className="flex min-w-0 flex-col gap-1.5">
+      <div className="relative overflow-hidden rounded-xl border border-border bg-muted" style={{ aspectRatio: ratio }}>
+        {style.hasSample ? (
+          <img src={illusImg(style.no, kind)} alt={`${style.name} ${label}`} loading="lazy" className="h-full w-full object-contain" />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
+            <ImageOff className="h-5 w-5" aria-hidden />
+            <span className="text-xs">範例待生成</span>
+          </div>
+        )}
+      </div>
+      <figcaption className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{label}</figcaption>
+    </figure>
+  );
+}
+
+function IllusTab() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {ILLUS_STYLES.map((st) => (
+        <Link key={st.no} to="/styles" search={{ tab: "illus", s: st.no }} className="panel flex flex-col gap-3 p-4 transition-shadow hover:shadow-md sm:p-5">
+          <div className="grid grid-cols-2 gap-2.5">
+            <IllusImage style={st} kind="before" label="Before" ratio="4 / 5" />
+            <IllusImage style={st} kind="art" label="After" ratio="4 / 5" />
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[17px] font-semibold tracking-tight">{st.name}</h2>
+            <span className="font-mono text-xs text-muted-foreground">{st.no} · {st.en}</span>
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">{st.desc}</p>
+          <div className="flex flex-wrap gap-1.5">
+            <Chip tone="good">適合：{st.goodFor}</Chip>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function IllusDetail({ style }: { style: IllusStyle }) {
+  return (
+    <div className="space-y-5">
+      <Link to="/styles" search={{ tab: "illus" }} className="inline-flex min-h-11 items-center gap-2 rounded-xl text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> 風格庫 / 插畫
+      </Link>
+      <div className="space-y-1.5">
+        <span className="font-mono text-xs text-muted-foreground">{style.no} · {style.en}</span>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{style.name}</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">{style.desc}</p>
+        <div className="flex flex-wrap gap-1.5 pt-1"><Chip tone="good">適合：{style.goodFor}</Chip></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <IllusImage style={style} kind="before" label="Before · 原照" ratio="4 / 5" />
+        <IllusImage style={style} kind="art" label="After · 單張作品" ratio="4 / 5" />
+        <div className="col-span-2 lg:col-span-1">
+          <IllusImage style={style} kind="compare" label="對照海報 3:4" ratio="3 / 4" />
+        </div>
+      </div>
+      {style.hasSample && (
+        <div className="flex flex-wrap gap-2">
+          <a href={illusImg(style.no, "art")} download className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-accent">
+            <Download className="h-4 w-4" /> 下載單張作品
+          </a>
+          <a href={illusImg(style.no, "compare")} download className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-accent">
+            <Download className="h-4 w-4" /> 下載對照海報
+          </a>
+        </div>
+      )}
+      {style.credit && <p className="text-xs text-muted-foreground">原照：{style.credit}</p>}
+      <CopyKeyword text={`插畫藝術風格 ${style.no}`} />
+      <CopyBlock label="① 對照海報 prompt（貼到 ChatGPT，附上原照）" text={style.prompt} />
+      <CopyBlock label="② 單張作品追加指令（第 ① 張出圖後再貼）" text={ART_FOLLOWUP_PROMPT} />
+    </div>
+  );
+}
+
 function StylesPage() {
   const { tab: rawTab, s } = Route.useSearch();
   const tab: Tab = rawTab ?? "web";
   const navigate = useNavigate();
   const selected = s ? getStyle(s) : undefined;
 
-  if (selected && tab !== "logo") return <StyleDetail style={selected} tab={tab} />;
+  if (tab === "illus" && s) {
+    const illus = ILLUS_STYLES.find((x) => x.no === s);
+    if (illus) return <IllusDetail style={illus} />;
+  }
+  if (selected && tab !== "logo" && tab !== "illus") return <StyleDetail style={selected} tab={tab} />;
 
   return (
     <div className="space-y-5">
@@ -347,7 +466,11 @@ function StylesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">風格庫</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {tab === "logo" ? "Logo = 類型 × 風格，例如「Monogram × Geometric」。" : "每個風格一個 keyword。說出名字，整個設計就往那個方向走。"}
+            {tab === "logo"
+              ? "Logo = 類型 × 風格，例如「Monogram × Geometric」。"
+              : tab === "illus"
+                ? "照片 → 插畫海報（ChatGPT 生圖）。說「插畫藝術風格 01」到「10」，每張原照出對照海報＋單張作品。"
+                : "每個風格一個 keyword。說出名字，整個設計就往那個方向走。"}
           </p>
         </div>
         <div role="tablist" aria-label="媒材" className="inline-flex self-start rounded-xl border border-border bg-card p-1">
@@ -367,7 +490,7 @@ function StylesPage() {
           ))}
         </div>
       </div>
-      {tab === "logo" ? <LogoTab /> : <StyleGrid key={tab} tab={tab} />}
+      {tab === "logo" ? <LogoTab /> : tab === "illus" ? <IllusTab /> : <StyleGrid key={tab} tab={tab} />}
     </div>
   );
 }
