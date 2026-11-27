@@ -28,7 +28,12 @@ export const Route = createFileRoute("/styles")({
   beforeLoad: requireSignedIn,
   validateSearch: (search: Record<string, unknown>): Search => ({
     tab: search["tab"] === "print" || search["tab"] === "logo" || search["tab"] === "illus" ? search["tab"] : undefined,
-    s: typeof search["s"] === "string" ? search["s"] : undefined,
+    s:
+      typeof search["s"] === "string"
+        ? search["s"]
+        : typeof search["s"] === "number"
+          ? String(search["s"]).padStart(2, "0")
+          : undefined,
   }),
   head: () => ({
     meta: [
