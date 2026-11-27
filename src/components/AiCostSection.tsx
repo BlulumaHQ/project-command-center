@@ -120,16 +120,18 @@ export function AiCostSection({ shown }: { shown: boolean }) {
 
       {tab === "feature" && (
         <ul className="divide-y divide-border text-sm">
-          {data.limits.map((l) => (
-            <LimitRowView
-              key={l.feature}
-              limit={l}
-              spent={spentOf(l.feature)}
-              money={money}
-              shown={shown}
-              onSave={(v) => setLimit.mutate({ feature: l.feature, monthly_usd: v })}
-            />
-          ))}
+          {data.limits
+            .filter((l) => l.feature in FEATURE_LABEL)
+            .map((l) => (
+              <LimitRowView
+                key={l.feature}
+                limit={l}
+                spent={spentOf(l.feature)}
+                money={money}
+                shown={shown}
+                onSave={(v) => setLimit.mutate({ feature: l.feature, monthly_usd: v })}
+              />
+            ))}
           {s.byProviderMonth.length > 0 && (
             <li className="pt-3 text-xs text-muted-foreground">
               本月各平台：
