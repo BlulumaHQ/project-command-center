@@ -1,7 +1,7 @@
 /**
  * 插畫藝術風格 01–10 — prompts copied verbatim from
  * BlulumaHQ/sony-knowledge-base skills/emerson-photo-styles-vol-2/SKILL.md
- * Images: /images/illustration/<no>-before.webp, <no>-compare.webp, <no>-art.webp
+ * Images: /images/illustration-<no>-before.webp, -compare.webp, -art.webp
  */
 
 export type IllusStyle = {
@@ -11,7 +11,7 @@ export type IllusStyle = {
   desc: string;
   goodFor: string;
   prompt: string;
-  /** set true once the sample images exist in /public/images/illustration */
+  /** set true once the sample images exist in /public/images */
   hasSample: boolean;
   credit?: string;
 };
@@ -24,7 +24,7 @@ export const ILLUS_STYLES: IllusStyle[] = [
     desc: "用鮮亮半透明色塊、重疊霧面玻璃與局部柔焦重組輪廓。",
     goodFor: "逆光、窗景、招牌或色彩鮮明的物件",
     prompt: "Turn each uploaded photograph into its own independent premium design poster, output separately in the original upload order without collages. Use a strict 3:4 portrait canvas divided into two equal horizontal sections, each occupying exactly 50% of the height. In the upper half, faithfully preserve the original photograph, including subject identity, structure, pose, proportions, authentic materials, natural lighting, shadows, and original colour atmosphere. Apply only subtle editorial-grade colour adjustments suitable for an art magazine, independent publication, or exhibition. Naturally extend the surrounding environment if needed, but never stretch, distort, replace, or alter the subject. In the lower half, extract the most recognisable subject silhouettes, outlines, structures, gestures, and narrative relationships, then reinterpret them as a refined minimalist abstract composition with layered frosted-glass aesthetics. Avoid realistic illustration and unnecessary details. Simplify the subject into geometric forms, flat colour fields, delicate lines, and generous negative space while preserving its essential identity and immediate visual connection to the photograph above. Construct the lower composition as a system of translucent frosted windows and matte-glass graphics with different levels of regional defocus, soft blur, transparency, and overlapping layers. Introduce varied soft-focus zones within the subject, around selected edges, and inside supporting forms, balancing clearly recognisable silhouettes with a gentle atmospheric haze. Blur must be hierarchical, selective, and region-specific, never uniformly applied across the entire lower half. A few restrained horizontal lines, vertical guides, or abstract rings may enhance visual order and spatial depth. Keep the subject centred and the composition balanced, using positive and negative shapes, scale relationships, and controlled whitespace to achieve elegance. Use an ivory or intelligently selected light-toned background with ample open space, making the subject appear suspended in a quiet, clean visual field. Derive the colour palette from the original photograph's most memorable hues without copying exact colour values. Preserve the source hue identity while brightening, purifying, clarifying, and softening the palette, removing muddy greyness and creating vivid yet gentle, translucent, uplifting, and healing colours. Suitable variations include clear blue, lake cyan, fresh green, bright yellow, coral orange, peach pink, pale violet, and other buoyant mixed hues. Establish depth through fresh warm-cool relationships and tonal contrast. Keep primary colours distinct but never harsh; one or two luminous warm accents may suggest sunlight. The overall atmosphere should be bright, vivid, airy, soft, warm, and refreshing. Avoid dirty colours, aged filters, muted Morandi palettes, dark brown grading, fluorescent tones, and cheap candy colours. Optionally incorporate a concise English title, number, or year, subtly integrated into the subject and negative space. Typography must be restrained, contemporary, refined, and editorial, reminiscent of international design studios, architectural posters, art exhibitions, and premium brand systems, without overpowering the imagery. The final result must feel sophisticated, modern, elegant, restrained, and artistic, emphasising minimalist abstraction, layered frosted glass, vivid healing colours, soft negative space, and professional typography. Avoid excessive filters, cheap plastic textures, cartoon aesthetics, obvious AI-generated appearances, generic template effects, and indiscriminate uniform blur. Output one independent poster per photograph, never merge multiple images.",
-    hasSample: false,
+    hasSample: true,
   },
   {
     no: "02",
@@ -113,5 +113,5 @@ export const ART_FOLLOWUP_PROMPT =
   "Using the lower half of the poster above as the exact reference, re-render only that artwork as a standalone full-canvas piece in 4:5 portrait. Keep the same composition, subject, palette, brushwork and typography treatment. No photograph, no divider line, no Before/After labels.";
 
 export function illusImg(no: string, kind: "before" | "compare" | "art") {
-  return `/images/illustration/${no}-${kind}.webp`;
+  return `/images/illustration-${no}-${kind}.webp`;
 }
