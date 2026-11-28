@@ -407,6 +407,36 @@ const robots: Record<string, { bg: string; art: ReactNode }> = {
       </>
     ),
   },
+  dash: {
+    bg: "#FFE4E6",
+    art: (
+      <>
+        <path d="M-54,-14 H-40 M-58,0 H-40 M-54,14 H-40" stroke="#FB7185" strokeWidth="4" strokeLinecap="round" />
+        <polygon points="-6,-58 6,-58 2,-46 10,-46 -4,-30 0,-42 -8,-42" fill="#FACC15" />
+        <rect x="-36" y="-30" width="72" height="62" rx="20" fill="#E11D48" />
+        <path d="M-28,-12 H28 L22,6 H-22 Z" fill="#4C0519" />
+        <rect x="-18" y="-7" width="12" height="6" rx="3" fill="#FDE68A" />
+        <rect x="6" y="-7" width="12" height="6" rx="3" fill="#FDE68A" />
+        <path d="M-9,16 Q0,23 9,16" fill="none" stroke="#FFE4E6" strokeWidth="3" strokeLinecap="round" />
+      </>
+    ),
+  },
+  chase: {
+    bg: "#E0F2FE",
+    art: (
+      <>
+        <line x1="0" y1="-32" x2="0" y2="-44" stroke="#0369A1" strokeWidth="3" />
+        <polygon points="-12,-46 16,-56 4,-40 0,-48" fill="#FFFFFF" stroke="#0369A1" strokeWidth="2" strokeLinejoin="round" />
+        <rect x="-36" y="-30" width="72" height="62" rx="16" fill="#0EA5E9" />
+        <rect x="-26" y="-13" width="52" height="21" rx="10" fill="#0C4A6E" />
+        <circle cx="-11" cy="-3" r="5" fill="#BAE6FD" />
+        <circle cx="11" cy="-3" r="5" fill="#BAE6FD" />
+        <circle cx="11" cy="-3" r="8.5" fill="none" stroke="#FDE68A" strokeWidth="2.2" />
+        <path d="M17,3 L23,9" stroke="#FDE68A" strokeWidth="2.6" strokeLinecap="round" />
+        <path d="M-8,17 Q0,22 8,17" fill="none" stroke="#E0F2FE" strokeWidth="2.5" strokeLinecap="round" />
+      </>
+    ),
+  },
   guest: {
     bg: "#EFE7FD",
     art: (

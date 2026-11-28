@@ -33,3 +33,10 @@ use the editor.
 - Use client-only route guards and a single root auth subscriber for the external Auth session; clear private Query caches on sign-out.
 
 - Keep task-view grouping and recent-activity ranking in browser-safe data helpers; the shared store exposes results so views and tests use identical rules.
+
+## HQ house rules (Sony)
+
+- No new tabs. New features go into an existing page or into the 晨報 (`hq-morning` edge function).
+- New skill / automation = one `pcc_agents` row (fun `name`, `name_zh`, `avatar`, `department_id`). New department = one `pcc_departments` row with `duty`, `schedule`, `output`, `escalate` filled (部門說明卡). The 團隊 office animation draws a room per department and a desk per agent from these rows, so nothing else needs editing. New avatar ids get art in `RobotAvatar.tsx` + a body colour in `AgentOffice.tsx` `BODY`.
+- Only items on the shared 叫醒老闆清單 (`pcc_meta` key `escalation`) may push-notify Sony; everything else waits for the 晨報.
+- Leads live in `pcc_leads` (業務部, hourly scheduled task). Client emails from Sony's own brands are Gmail drafts only — never sent automatically.

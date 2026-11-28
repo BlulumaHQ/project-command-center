@@ -21,7 +21,9 @@ export function normalizeAgentStatus(s: string): AgentStatus {
   return s === "error" || s === "failed" ? "broken" : s === "running" ? "ok" : "idle";
 }
 export interface AgentRow { id: string; name: string; name_zh: string; role: string; skill: string | null; trigger_hint: string | null; avatar: string; is_manager: boolean; status: AgentStatus; status_note: string | null; last_run_at: string | null; sort: number; department_id: string | null; }
-export interface DepartmentRow { id: string; num: number | null; name_zh: string; phase: "hq" | "pre" | "post"; avatar: string; summary: string | null; sort: number; }
+export interface DepartmentRow { id: string; num: number | null; name_zh: string; phase: "hq" | "pre" | "post"; avatar: string; summary: string | null; sort: number; duty?: string | null; schedule?: string | null; output?: string | null; escalate?: string | null; }
+/** One line of the shared 叫醒老闆清單 (pcc_meta 'escalation'): push = phone notification right away, otherwise it waits for the 晨報. */
+export interface EscalationRule { key: string; label: string; detail: string; push: boolean; }
 export interface AgentRunRow { id: string; agent_id: string; project_id: string | null; summary: string; outcome: "ok" | "check" | "broken"; created_at: string; }
 export type LearnStatus = "new" | "todo" | "done" | "skip";
 export interface LearnRow { id: string; url: string; author: string | null; title: string | null; summary: string | null; category: string | null; usefulness: number | null; action: string | null; status: LearnStatus; source: string; created_at: string; }
@@ -112,6 +114,10 @@ export function useStore() {
     getWaiting: (): WaitingItem[] => (waitingQuery.data ?? []).map((w) => ({ initials: w.initials, who: w.who, project: w.project_label, what: w.what })),
     getAgents: () => agentsQuery.data ?? [],
     getDepartments: () => deptQuery.data ?? [],
+    getEscalation: (): EscalationRule[] => {
+      const value = metaQuery.data?.find((m) => m.key === "escalation")?.value;
+      return Array.isArray(value) ? (value as EscalationRule[]) : [];
+    },
     setAgentStatus: async (agentId: string, status: AgentStatus, note: string | null = null) => {
       client.setQueryData<AgentRow[]>(key("pcc_agents"), (list) => (list ?? []).map((a) => a.id === agentId ? { ...a, status, status_note: note } : a));
       const { error } = await supabase.from("pcc_agents").update({ status, status_note: note, updated_at: new Date().toISOString() }).eq("id", agentId);

@@ -22,16 +22,24 @@ const BODY: Record<string, string> = {
   bolt: "#EAB308", compass: "#4F46E5",
   blueprint: "#2F5FAF", sentinel: "#1E3A8A", justice: "#57534E", echo: "#C2410C",
   deal: "#1F2937", sunny: "#F59E0B", ally: "#BE8A5C", ledger: "#065F46",
+  mirror: "#A855F7", duel: "#DC2626", dash: "#E11D48", chase: "#0EA5E9",
 };
 
-// Desk anchors (head centre): pre-launch departments in the back row, post-launch in the front row,
-// the general manager's office on the left.
-const ROW_X = [270, 410, 550, 690, 830];
-const BACK_Y = 118;
-const FRONT_Y = 208;
-const HQ_POS = { x: 110, y: 160 };
-const COFFEE_X = 62;
-const BOARD_X = 710;
+
+// Office plan (viewBox units). The general manager's glass office on the left; pre-launch departments
+// in the back row, post-launch in the front row, one partitioned room per department. Every agent row
+// in pcc_agents gets its own desk inside its department's room, so a new skill / department added in
+// Supabase shows up here automatically.
+const W = 1100;
+const H = 404;
+const HQ_ROOM = { x: 14, y: 46, w: 178, h: 342 };
+const ROOM_X0 = 204;
+const ROOM_W = 172;
+const ROOM_GAP = 4;
+const BACK_ROW = { y: 46, h: 156 };
+const FRONT_ROW = { y: 232, h: 156 };
+const BOT_SCALE = 0.74;
+const MAX_IN_ROOM = 4;
 
 const CSS = `
 .hqo text{font-family:inherit}
@@ -91,38 +99,6 @@ const CSS = `
 .hqo-agent:hover .hqo-head{filter:brightness(1.08)}
 `;
 
-const DESK_THEME = {
-  hq: { panel: "#383838", text: "#FFFFFF", sub: "#D4D4D4" },
-  pre: { panel: "#DCE7F9", text: "#1E3A8A", sub: "#3F5F96" },
-  post: { panel: "#F3ECE0", text: "#6B4E25", sub: "#8A6A3E" },
-} as const;
-
-function Desk({ x, y, big = false, screenColor, phase, title, names }: {
-  x: number; y: number; big?: boolean; screenColor: string; phase: DepartmentRow["phase"]; title: string; names: string;
-}) {
-  const w = big ? 124 : 108;
-  const t = DESK_THEME[phase];
-  return (
-    <g>
-      <rect x={x - w / 2} y={y + 28} width={w} height={8} rx={3} fill="#C8A27A" />
-      <rect x={x - w / 2 + 6} y={y + 52} width={4} height={12} fill="#9C7552" />
-      <rect x={x + w / 2 - 10} y={y + 52} width={4} height={12} fill="#9C7552" />
-      <rect x={x - w / 2 + 3} y={y + 36} width={w - 6} height={26} rx={3} fill={t.panel} />
-      <text x={x} y={y + 47.5} textAnchor="middle" fontSize={9} fontWeight={700} fill={t.text}>{title}</text>
-      <text x={x} y={y + 58} textAnchor="middle" fontSize={7} fill={t.sub}>{names}</text>
-      <g transform={`translate(${x + w / 2 - 26},${y + 10})`}>
-        <rect x={0} y={0} width={20} height={15} rx={2} fill="#334155" />
-        <rect className="hqo-screen" x={2} y={2} width={16} height={11} rx={1} fill={screenColor} />
-        <rect x={8} y={15} width={4} height={4} fill="#475569" />
-      </g>
-      <rect x={x - 6} y={y + 25} width={18} height={4} rx={1} fill="#E2E8F0" />
-      <g transform={`translate(${x - w / 2 + 10},${y + 19})`}>
-        <rect width={7} height={9} rx={1.5} fill="#FFFFFF" stroke="#CBD5E1" strokeWidth={0.8} />
-        <rect x={1.2} y={2} width={4.6} height={4} fill="#7C4A2D" />
-      </g>
-    </g>
-  );
-}
 
 function Bubble({ status, recent }: { status: AgentRow["status"]; recent: boolean }) {
   if (status === "check") {
@@ -286,12 +262,12 @@ function Robot({ agent, recent, action, actKey, dx, onPick }: {
   );
 }
 
-/** Picks the next office-life action for an agent; coffee machine and whiteboard fit one robot at a time. */
+/** Picks the next office-life action for an agent; one robot at a time walks to a whiteboard. */
 function nextAction(a: AgentRow, recent: boolean, taken: Set<Action>): Action {
   const canWalk = !a.is_manager && a.avatar !== "mia";
   const pool: [Action, number][] = [
     ["work", 4], ["stretch", 1], ["chat", 1], ["phone", 1], ["think", 1],
-    ...(canWalk && !taken.has("coffee") ? [["coffee", 1.2] as [Action, number]] : []),
+    ["coffee", 1], // sipped at the desk, so any number of robots can have one
     ...(canWalk && !taken.has("board") ? [["board", 1.2] as [Action, number]] : []),
     ...(recent ? [["celebrate", 1.5] as [Action, number]] : []),
   ];
@@ -344,106 +320,230 @@ function useOfficeLife(agents: AgentRow[], isRecent: (a: AgentRow) => boolean) {
   return acts;
 }
 
-interface DeskSlot { dept: DepartmentRow; bot: AgentRow; names: string; x: number; y: number; recentAt: number }
 
-function deptStatus(members: AgentRow[]): AgentRow["status"] {
-  if (members.some((a) => a.status === "broken")) return "broken";
-  if (members.some((a) => a.status === "check")) return "check";
-  if (members.some((a) => a.status === "ok")) return "ok";
-  return "idle";
-}
+const PHASE_THEME = {
+  hq: { floor: "#EEF1F5", wall: "#9AA6B8", glass: "#D6E6F7", plate: "#383838", plateText: "#FFFFFF" },
+  pre: { floor: "#E9F0FB", wall: "#8FA6CC", glass: "#DCE7F9", plate: "#1E3A8A", plateText: "#FFFFFF" },
+  post: { floor: "#F6EFE3", wall: "#C2A77F", glass: "#F3ECE0", plate: "#6B4E25", plateText: "#FFFFFF" },
+} as const;
+
+interface Box { x: number; y: number; w: number; h: number }
 
 export function deskTitle(d: DepartmentRow) {
   return d.num ? `${String(d.num).padStart(2, "0")} ${d.name_zh}` : d.name_zh;
 }
 
-/** One desk per department: the robot is the department, the desk shows its number, name and one or two of its skills. */
+/** Partitioned room: back wall with the department's name plate, glass side partitions, a front wall with a door gap. */
+function Room({ box, dept, extra }: { box: Box; dept: DepartmentRow; extra: number }) {
+  const t = PHASE_THEME[dept.phase];
+  const { x, y, w, h } = box;
+  const door = 44;
+  const half = (w - door) / 2;
+  const title = deskTitle(dept);
+  const plateW = Math.min(w - 20, 18 + title.length * 11);
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} rx={6} fill={t.floor} />
+      {/* carpet tile pattern */}
+      {Array.from({ length: Math.floor(w / 43) }, (_, i) => (
+        <rect key={i} x={x + 6 + i * 43} y={y + 12} width={1} height={h - 18} fill="#FFFFFF" opacity={0.5} />
+      ))}
+      {/* back wall + whiteboard + clock */}
+      <rect x={x} y={y} width={w} height={10} rx={3} fill={t.wall} />
+      <rect x={x + w - 44} y={y + 14} width={34} height={20} rx={2} fill="#FFFFFF" stroke="#CBD5E1" strokeWidth={1.2} />
+      <path d={`M${x + w - 39},${y + 21} h14 M${x + w - 39},${y + 26} h20 M${x + w - 39},${y + 30} h9`} stroke="#94A3B8" strokeWidth={1.4} strokeLinecap="round" />
+      <circle cx={x + 16} cy={y + 22} r={6} fill="#FFFFFF" stroke="#94A3B8" strokeWidth={1.2} />
+      <path d={`M${x + 16},${y + 22} v-3.5 M${x + 16},${y + 22} h2.6`} stroke="#334155" strokeWidth={1.1} strokeLinecap="round" />
+      {/* side partitions: solid base, glass top */}
+      {[x, x + w - 5].map((px) => (
+        <g key={px}>
+          <rect x={px} y={y + 6} width={5} height={h - 6} rx={2} fill={t.glass} opacity={0.9} />
+          <rect x={px} y={y + h * 0.55} width={5} height={h * 0.45} rx={2} fill={t.wall} />
+        </g>
+      ))}
+      {/* front wall with door gap */}
+      <rect x={x} y={y + h - 6} width={half} height={6} rx={2} fill={t.wall} />
+      <rect x={x + half + door} y={y + h - 6} width={half} height={6} rx={2} fill={t.wall} />
+      {/* name plate */}
+      <rect x={x + (w - plateW) / 2} y={y - 9} width={plateW} height={18} rx={9} fill={t.plate} />
+      <text x={x + w / 2} y={y + 4} textAnchor="middle" fontSize={11} fontWeight={700} fill={t.plateText}>{title}</text>
+      {extra > 0 && (
+        <g transform={`translate(${x + w - 26},${y + h - 22})`}>
+          <rect width={20} height={14} rx={7} fill="#334155" />
+          <text x={10} y={10.5} textAnchor="middle" fontSize={9} fontWeight={700} fill="#FFFFFF">+{extra}</text>
+        </g>
+      )}
+    </g>
+  );
+}
+
+/** One desk per robot, drawn in the robot's local (unscaled) coordinates: nameplate shows the bot's fun name. */
+function MiniDesk({ agent, screen }: { agent: AgentRow; screen: string }) {
+  return (
+    <g>
+      <rect x={-34} y={25} width={68} height={6} rx={2.5} fill="#C8A27A" />
+      <rect x={-31} y={31} width={62} height={22} rx={3} fill="#FFFFFF" stroke="#E2E8F0" strokeWidth={1} />
+      <text x={0} y={41} textAnchor="middle" fontSize={10} fontWeight={700} fill="#1F2937">{agent.name}</text>
+      <text x={0} y={50.5} textAnchor="middle" fontSize={8} fill="#64748B">{agent.name_zh}</text>
+      <g transform="translate(13,9)">
+        <rect width={18} height={13} rx={2} fill="#334155" />
+        <rect className="hqo-screen" x={2} y={2} width={14} height={9} rx={1} fill={screen} />
+        <rect x={7} y={13} width={4} height={3} fill="#475569" />
+      </g>
+      <g transform="translate(-28,17)">
+        <rect width={6} height={8} rx={1.5} fill="#FFFFFF" stroke="#CBD5E1" strokeWidth={0.8} />
+        <rect x={1} y={1.8} width={4} height={3.4} fill="#7C4A2D" />
+      </g>
+    </g>
+  );
+}
+
+/** Empty department: a desk waiting for its first robot. */
+function EmptyDesk({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={-30} y={18} width={60} height={6} rx={2.5} fill="#C8A27A" />
+      <rect x={-27} y={24} width={54} height={16} rx={3} fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x={0} y={35.5} textAnchor="middle" fontSize={9} fill="#94A3B8">籌備中</text>
+      <g transform="translate(-14,0)">
+        <rect width={26} height={18} rx={2} fill="#D6B48A" />
+        <path d="M0,6 H26 M13,0 V6" stroke="#B08D5B" strokeWidth={1.2} />
+      </g>
+      <polygon points="20,18 25,4 30,18" fill="#F97316" />
+      <rect x={21.5} y={10} width={7} height={2.5} fill="#FFFFFF" />
+    </g>
+  );
+}
+
+/** Seats for n robots inside a room (head centres). */
+function seats(box: Box, n: number, manager: boolean): { x: number; y: number; scale: number }[] {
+  const { x, y, w, h } = box;
+  const s = BOT_SCALE;
+  if (manager) {
+    // GM's office: the manager at a big desk on top, the rest in two columns below.
+    const rest = Math.max(0, n - 1);
+    const out = [{ x: x + w / 2, y: y + 62, scale: 0.95 }];
+    for (let i = 0; i < rest; i++) {
+      const col = i % 2, row = Math.floor(i / 2);
+      out.push({ x: x + (rest === 1 ? w / 2 : col === 0 ? w * 0.29 : w * 0.71), y: y + 168 + row * 92, scale: s });
+    }
+    return out;
+  }
+  const colX = [x + w * 0.29, x + w * 0.71];
+  const rowY = [y + 42, y + 110];
+  if (n <= 1) return [{ x: x + w / 2, y: y + 74, scale: s }];
+  if (n === 2) return colX.map((cx) => ({ x: cx, y: y + 74, scale: s }));
+  if (n === 3) return [{ x: colX[0]!, y: rowY[0]!, scale: s }, { x: colX[1]!, y: rowY[0]!, scale: s }, { x: x + w / 2, y: rowY[1]!, scale: s }];
+  return [0, 1, 2, 3].map((i) => ({ x: colX[i % 2]!, y: rowY[Math.floor(i / 2)]!, scale: s }));
+}
+
+interface Seat { agent: AgentRow; x: number; y: number; scale: number; boardX: number }
+
+/**
+ * The whole office: one room per department, one desk per AI employee. Animation mirrors real status:
+ * ok = working (typing, coffee, whiteboard, chatting…), check = "?", broken = smoke + "!", idle = asleep,
+ * finished work in the last 30 minutes = sparkle / celebration. Tap a robot to jump to its card.
+ */
 export function AgentOffice({ departments, agents, lastRunOf }: {
   departments: DepartmentRow[]; agents: AgentRow[]; lastRunOf: (a: AgentRow) => number;
 }) {
+  const hq = departments.find((d) => d.phase === "hq");
   const pre = departments.filter((d) => d.phase === "pre");
   const post = departments.filter((d) => d.phase === "post");
-  const hq = departments.find((d) => d.phase === "hq");
-  const slotFor = (d: DepartmentRow, x: number, y: number): DeskSlot => {
-    const members = agents.filter((a) => a.department_id === d.id);
-    const shown = members.filter((a) => !a.is_manager).slice(0, 2).map((a) => a.name);
-    const recentAt = Math.max(0, ...members.map(lastRunOf));
-    const bot: AgentRow = {
-      id: `dept-${d.id}`, name: d.name_zh, name_zh: "", role: d.summary ?? "", skill: null, trigger_hint: null,
-      avatar: d.avatar, is_manager: d.phase === "hq", status: deptStatus(members), status_note: null,
-      last_run_at: null, sort: d.sort, department_id: d.id,
-    };
-    return { dept: d, bot, names: shown.length ? shown.join(" · ") : "籌備中", x, y, recentAt };
-  };
-  const slots: DeskSlot[] = [
-    ...(hq ? [slotFor(hq, HQ_POS.x, HQ_POS.y)] : []),
-    ...pre.slice(0, 5).map((d, i) => slotFor(d, ROW_X[i]!, BACK_Y)),
-    ...post.slice(0, 5).map((d, i) => slotFor(d, ROW_X[i]!, FRONT_Y)),
+  const roomBox = (i: number, row: { y: number; h: number }): Box => ({ x: ROOM_X0 + i * (ROOM_W + ROOM_GAP), y: row.y, w: ROOM_W, h: row.h });
+  const rooms: { dept: DepartmentRow; box: Box; manager: boolean }[] = [
+    ...(hq ? [{ dept: hq, box: HQ_ROOM, manager: true }] : []),
+    ...pre.slice(0, 5).map((d, i) => ({ dept: d, box: roomBox(i, BACK_ROW), manager: false })),
+    ...post.slice(0, 5).map((d, i) => ({ dept: d, box: roomBox(i, FRONT_ROW), manager: false })),
   ];
+  const byRoom = rooms.map((r) => {
+    const members = agents
+      .filter((a) => a.department_id === r.dept.id)
+      .sort((a, b) => Number(b.is_manager) - Number(a.is_manager) || a.sort - b.sort);
+    const shown = members.slice(0, r.manager ? 5 : MAX_IN_ROOM);
+    const places = seats(r.box, shown.length, r.manager);
+    const seated: Seat[] = shown.map((a, i) => ({ agent: a, ...places[i]!, boardX: r.box.x + r.box.w - 27 }));
+    return { ...r, seated, extra: members.length - shown.length };
+  });
+  const seated = byRoom.flatMap((r) => r.seated);
   const now = Date.now();
-  const recentOf = new Map(slots.map((s) => [s.bot.id, now - s.recentAt < 30 * 60 * 1000]));
+  const recentOf = new Map(seated.map((s) => [s.agent.id, now - lastRunOf(s.agent) < 30 * 60 * 1000]));
   const isRecent = (a: AgentRow) => recentOf.get(a.id) ?? false;
-  const bots = slots.map((s) => s.bot);
-  const acts = useOfficeLife(bots, isRecent);
+  const acts = useOfficeLife(seated.map((s) => s.agent), isRecent);
   const scroller = useCenteredScroll();
-  if (slots.length === 0) return null;
-  const pick = (id: string) => document.getElementById(`dept-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const robotFor = (s: DeskSlot) => {
-    const st = acts[s.bot.id];
-    const action = st?.action ?? "work";
-    const dx = action === "coffee" ? COFFEE_X - s.x : action === "board" ? BOARD_X - s.x : 0;
-    return <Robot agent={s.bot} recent={isRecent(s.bot)} action={action} actKey={st?.key ?? 0} dx={dx} onPick={() => pick(s.dept.id)} />;
-  };
+  if (rooms.length === 0) return null;
+  const pick = (id: string) => document.getElementById(`agent-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   const screen = (a: AgentRow) => a.status === "broken" ? "#FCA5A5" : a.status === "idle" ? "#1E293B" : "#7DD3FC";
-  // Draw back to front so front-row robots overlap the desks behind them.
-  const ordered = [...slots].sort((a, b) => a.y - b.y);
+  const aisleY = BACK_ROW.y + BACK_ROW.h;
+  const aisleH = FRONT_ROW.y - aisleY;
 
   return (
     <section className="panel overflow-hidden p-0" aria-label="AI 團隊辦公室動畫">
       <style>{CSS}</style>
-      <div ref={scroller} className="overflow-x-auto overscroll-x-contain sm:overflow-visible">
-      <svg className="hqo block h-auto w-full min-w-[760px] sm:min-w-0" viewBox="0 0 960 290" role="img">
+      <div ref={scroller} className="overflow-x-auto overscroll-x-contain">
+      <svg className="hqo block h-auto w-full min-w-[900px]" viewBox={`0 0 ${W} ${H}`} role="img">
         <title>AI 團隊辦公室</title>
-        <rect width={960} height={112} fill="#EEF2F7" />
-        <rect y={112} width={960} height={178} fill="#F6F1E8" />
-        <rect y={108} width={960} height={5} fill="#D7DEE8" />
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => <rect key={i} x={i * 100} y={113} width={1} height={177} fill="#EDE6D9" />)}
-
-        <g transform="translate(320,20)">
-          <rect width={130} height={64} rx={4} fill="#BFDBFE" stroke="#94A3B8" strokeWidth={2} />
-          <path d="M8,64 V38 h14 V28 h16 V64 M46,64 V20 h18 V64 M72,64 V34 h12 V24 h14 V64 M104,64 V40 h18 V64" fill="#93C5FD" />
-          <rect x={64} width={2} height={64} fill="#94A3B8" />
-          <rect y={31} width={130} height={2} fill="#94A3B8" />
+        <rect width={W} height={H} fill="#F4F1EA" />
+        {/* top wall with windows */}
+        <rect width={W} height={30} fill="#E3E9F1" />
+        {Array.from({ length: 11 }, (_, i) => (
+          <g key={i} transform={`translate(${30 + i * 98},4)`}>
+            <rect width={70} height={20} rx={2} fill="#BFDBFE" stroke="#94A3B8" strokeWidth={1.2} />
+            <path d={`M4,20 V${12 - (i % 3) * 2} h8 V${8 + (i % 2) * 3} h8 V20 M34,20 V${10 + (i % 3)} h10 V20 M52,20 V${7 + (i % 2) * 4} h12 V20`} fill="#93C5FD" />
+            <rect x={34.5} width={1.5} height={20} fill="#94A3B8" />
+          </g>
+        ))}
+        {/* aisle: pantry, water cooler, plants, a printer */}
+        <g transform={`translate(${ROOM_X0 + 10},${aisleY + 4})`}>
+          <rect width={40} height={aisleH - 10} rx={3} fill="#475569" />
+          <rect x={6} y={5} width={14} height={7} rx={1.5} fill="#1E293B" />
+          <circle cx={30} cy={9} r={3} fill="#F59E0B" />
+          <circle className="hqo-steam" cx={30} cy={1} r={2.5} fill="#CBD5E1" />
+          <text x={48} y={aisleH / 2} fontSize={9} fill="#8A6A3E">茶水間</text>
+        </g>
+        {[420, 640, 860].map((px, i) => (
+          <g key={px} transform={`translate(${px},${aisleY + aisleH / 2})`}>
+            <rect x={-7} y={0} width={14} height={11} rx={2} fill="#B45309" />
+            <ellipse cx={-4} cy={-4} rx={5} ry={9} fill={i % 2 ? "#16A34A" : "#22C55E"} transform="rotate(-20 -4 -4)" />
+            <ellipse cx={4} cy={-5} rx={5} ry={9} fill="#16A34A" transform="rotate(18 4 -5)" />
+          </g>
+        ))}
+        <g transform={`translate(${ROOM_X0 + 3 * (ROOM_W + ROOM_GAP) + 70},${aisleY + 6})`}>
+          <rect width={16} height={aisleH - 12} rx={3} fill="#E0F2FE" stroke="#7DD3FC" />
+          <rect x={3} y={3} width={10} height={8} rx={2} fill="#38BDF8" opacity={0.7} />
+        </g>
+        <g transform={`translate(${W - 74},${aisleY + 7})`}>
+          <rect width={40} height={aisleH - 14} rx={3} fill="#CBD5E1" />
+          <rect x={6} y={3} width={28} height={5} rx={1} fill="#FFFFFF" />
+          <text x={-4} y={aisleH / 2 - 2} textAnchor="end" fontSize={9} fill="#64748B">印表機</text>
         </g>
 
-        <g transform="translate(640,18)">
-          <rect width={140} height={70} rx={4} fill="#FFFFFF" stroke="#CBD5E1" strokeWidth={2} />
-          <text x={12} y={20} fontSize={11} fontWeight={700} fill="#1E3A8A">Bluluma HQ</text>
-          <path d="M12,34 h40 M12,44 h60 M12,54 h30" stroke="#94A3B8" strokeWidth={2} strokeLinecap="round" />
-          <rect x={90} y={28} width={10} height={30} fill="#5887DA" />
-          <rect x={104} y={38} width={10} height={20} fill="#B08D5B" />
-          <rect x={118} y={22} width={10} height={36} fill="#93C5FD" />
-        </g>
-
-        <g transform="translate(36,58)">
-          <rect y={44} width={60} height={10} rx={2} fill="#C8A27A" />
-          <rect x={14} y={14} width={30} height={30} rx={4} fill="#475569" />
-          <rect x={19} y={19} width={20} height={8} rx={2} fill="#1E293B" />
-          <circle cx={29} cy={34} r={3} fill="#F59E0B" />
-          <rect x={46} y={34} width={9} height={10} rx={2} fill="#FFFFFF" stroke="#CBD5E1" />
-          <circle className="hqo-steam" cx={50} cy={30} r={2.5} fill="#CBD5E1" />
-        </g>
-
-        <g transform="translate(925,150)">
-          <rect x={-12} y={20} width={24} height={22} rx={3} fill="#B45309" />
-          <ellipse cx={-8} cy={10} rx={9} ry={16} fill="#22C55E" transform="rotate(-20 -8 10)" />
-          <ellipse cx={8} cy={8} rx={9} ry={17} fill="#16A34A" transform="rotate(18 8 8)" />
-        </g>
-
-        {ordered.map((s) => (
-          <g key={s.dept.id}>
-            <g transform={`translate(${s.x},${s.y})`}>{robotFor(s)}</g>
-            <Desk x={s.x} y={s.y} big={s.dept.phase === "hq"} screenColor={screen(s.bot)} phase={s.dept.phase} title={deskTitle(s.dept)} names={s.names} />
+        {byRoom.map((r) => (
+          <g key={r.dept.id}>
+            <Room box={r.box} dept={r.dept} extra={r.extra} />
+            {r.seated.length === 0 && <EmptyDesk x={r.box.x + r.box.w / 2} y={r.box.y + 62} />}
+            {r.manager && (
+              // meeting table + sofa in the GM's office
+              <g transform={`translate(${r.box.x + r.box.w / 2},${r.box.y + r.box.h - 52})`}>
+                <rect x={-46} y={14} width={92} height={18} rx={9} fill="#94A3B8" />
+                <rect x={-42} y={8} width={84} height={12} rx={6} fill="#CBD5E1" />
+                <ellipse cx={0} cy={-8} rx={30} ry={10} fill="#C8A27A" />
+                <rect x={-3} y={-8} width={6} height={14} fill="#9C7552" />
+                <rect x={-8} y={-16} width={7} height={6} rx={1.5} fill="#FFFFFF" />
+                <rect x={6} y={-15} width={10} height={4} rx={1} fill="#FDE68A" />
+              </g>
+            )}
+            {[...r.seated].sort((a, b) => a.y - b.y).map((s) => {
+              const st = acts[s.agent.id];
+              const action = st?.action ?? "work";
+              const dx = action === "board" ? (s.boardX - s.x) / s.scale : 0;
+              return (
+                <g key={s.agent.id} transform={`translate(${s.x},${s.y}) scale(${s.scale})`}>
+                  <Robot agent={s.agent} recent={isRecent(s.agent)} action={action} actKey={st?.key ?? 0} dx={dx} onPick={() => pick(s.agent.id)} />
+                  <MiniDesk agent={s.agent} screen={screen(s.agent)} />
+                </g>
+              );
+            })}
           </g>
         ))}
       </svg>

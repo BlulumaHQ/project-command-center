@@ -7,6 +7,7 @@ import { vancouverDate } from "@/data/tasks";
 import { upsellFor, type Upsell } from "@/data/upsell";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { NotConnected } from "@/components/ui-bits";
+import { LeadsPanel } from "@/components/LeadsPanel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/clients")({
@@ -88,6 +89,8 @@ function ClientsPage() {
           {all.length} 個客戶 · {soon} 個 30 天內到期 · {pushable} 個現在可以推下一階
         </p>
       </header>
+
+      <div className={cn(selected && "max-lg:hidden")}><LeadsPanel /></div>
 
       <div className={cn("flex flex-wrap items-center gap-2", selected && "max-lg:hidden")}>
         {BRAND_FILTERS.map((b) => (

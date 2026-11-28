@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Copy, ExternalLink, Wrench } from "lucide-react";
+import { BellRing, Copy, ExternalLink, Inbox, Wrench } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useStore, type AgentRow, type AgentStatus, type DepartmentRow } from "@/data/store";
+import { useStore, type AgentRow, type AgentStatus, type DepartmentRow, type EscalationRule } from "@/data/store";
 import { requireSignedIn } from "@/lib/auth";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { RobotAvatar } from "@/components/RobotAvatar";
@@ -125,6 +125,42 @@ function AgentCard({ agent, lastRun, runs, onFix, manager = false }: {
 
 const PHASE_LABEL: Record<DepartmentRow["phase"], string> = { hq: "統籌", pre: "上線前", post: "上線後營運" };
 
+/** 部門說明卡: what the department owns, when it runs, what it hands you, when it wakes you. */
+function DeptCard({ d }: { d: DepartmentRow }) {
+  const rows: [string, string | null | undefined][] = [["負責", d.duty], ["什麼時候跑", d.schedule], ["交給你", d.output], ["什麼時候找你", d.escalate]];
+  if (!rows.some(([, v]) => v)) return null;
+  return (
+    <dl className="grid gap-x-4 gap-y-1.5 rounded-2xl bg-muted/60 p-3 text-sm sm:grid-cols-2">
+      {rows.filter(([, v]) => v).map(([k, v]) => (
+        <div key={k} className="flex gap-2"><dt className="w-[5.5rem] shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0">{v}</dd></div>
+      ))}
+    </dl>
+  );
+}
+
+/** The one shared list every department follows: only these things interrupt Sony. */
+function EscalationPanel({ rules }: { rules: EscalationRule[] }) {
+  if (rules.length === 0) return null;
+  const push = rules.filter((r) => r.push);
+  const later = rules.filter((r) => !r.push);
+  return (
+    <section className="panel p-4 sm:p-5" aria-label="叫醒老闆清單">
+      <h2 className="font-semibold">叫醒老闆清單</h2>
+      <p className="mt-0.5 text-sm text-muted-foreground">所有部門共用。只有清單上的事會打擾你，其他事各部門自己處理，結果放晨報。</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-st-deadline-fg"><BellRing className="h-3.5 w-3.5" />立刻推播到手機</p>
+          <ul className="mt-1.5 space-y-1.5">{push.map((r) => <li key={r.key} className="text-sm"><span className="font-medium">{r.label}</span><span className="text-muted-foreground"> · {r.detail}</span></li>)}</ul>
+        </div>
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Inbox className="h-3.5 w-3.5" />放晨報，不推播</p>
+          <ul className="mt-1.5 space-y-1.5">{later.map((r) => <li key={r.key} className="text-sm"><span className="font-medium">{r.label}</span></li>)}</ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TeamPage() {
   const store = useStore();
   const [fixing, setFixing] = useState<AgentRow | null>(null);
@@ -152,6 +188,7 @@ function TeamPage() {
         </p>
       </div>
       <AgentOffice departments={departments} agents={agents} lastRunOf={lastRun} />
+      <EscalationPanel rules={store.getEscalation()} />
       {departments.map((d) => {
         const members = agents.filter((a) => a.department_id === d.id);
         return (
@@ -161,6 +198,7 @@ function TeamPage() {
               <h2 className="text-lg font-semibold">{deskTitle(d)}</h2>
               {d.summary && <p className="w-full text-sm text-muted-foreground sm:w-auto sm:flex-1">{d.summary}</p>}
             </div>
+            <DeptCard d={d} />
             {members.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">籌備中：這個部門的 skill 還沒寫。</div>
             ) : (
