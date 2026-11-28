@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ExternalLink, Mail, Phone, Search } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ExternalLink, Mail, Phone, Search } from "lucide-react";
 import { requireSignedIn } from "@/lib/auth";
 import { daysUntil, useClients, type ClientRow } from "@/data/hq2";
 import { vancouverDate } from "@/data/tasks";
+import { upsellFor, type Upsell } from "@/data/upsell";
 import { DataError, DataSkeleton } from "@/components/DataState";
 import { NotConnected } from "@/components/ui-bits";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/clients")({
   component: ClientsPage,
 });
 
-const BRAND_FILTERS = ["全部", "Bluluma", "Sonykun", "SwiftLift", "SwiftSite"];
+const BRAND_FILTERS = ["全部", "Bluluma", "Sonykun", "SwiftLift", "SwiftSite", "可以推"];
 
 function nextRenewal(c: ClientRow, today: string) {
   return (c.renewals ?? [])
@@ -39,11 +40,15 @@ function ClientsPage() {
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
     return (clients.data ?? [])
-      .filter(
-        (c) => brand === "全部" || (c.brand ?? "").toLowerCase().includes(brand.toLowerCase()),
+      .filter((c) =>
+        brand === "全部"
+          ? true
+          : brand === "可以推"
+            ? Boolean(upsellFor(c, today)?.now)
+            : (c.brand ?? "").toLowerCase().includes(brand.toLowerCase()),
       )
       .filter((c) => !term || JSON.stringify(c).toLowerCase().includes(term));
-  }, [clients.data, brand, q]);
+  }, [clients.data, brand, q, today]);
 
   if (clients.error)
     return <DataError message={clients.error.message} retry={() => void clients.refetch()} />;
@@ -51,6 +56,7 @@ function ClientsPage() {
 
   const all = clients.data ?? [];
   const selected = list.find((c) => c.id === selectedId) ?? null;
+  const pushable = all.filter((c) => upsellFor(c, today)?.now).length;
   const soon = all.filter((c) => {
     const r = nextRenewal(c, today);
     return r && daysUntil(r.date, today) <= 30;
@@ -79,7 +85,7 @@ function ClientsPage() {
       <header className={cn(selected && "max-lg:hidden")}>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">客戶</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {all.length} 個客戶 · {soon} 個 30 天內到期
+          {all.length} 個客戶 · {soon} 個 30 天內到期 · {pushable} 個現在可以推下一階
         </p>
       </header>
 
@@ -118,6 +124,7 @@ function ClientsPage() {
           {list.map((c) => {
             const r = nextRenewal(c, today);
             const hot = r && daysUntil(r.date, today) <= 30;
+            const up = upsellFor(c, today);
             return (
               <li key={c.id}>
                 <button
@@ -151,6 +158,17 @@ function ClientsPage() {
                       )}
                     >
                       下次到期：{r.title} · {r.date}
+                    </span>
+                  )}
+                  {up?.next && (
+                    <span
+                      className={cn(
+                        "flex items-center gap-1 text-xs",
+                        up.now ? "font-semibold text-st-almost-fg" : "text-muted-foreground",
+                      )}
+                    >
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+                      下一步可以賣：{up.next}
                     </span>
                   )}
                 </button>
@@ -249,6 +267,8 @@ function ClientDetail({
         )}
       </section>
 
+      <UpsellPanel up={upsellFor(c, today)} />
+
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="panel p-5">
           <h3 className="font-semibold">帳號在哪裡</h3>
@@ -322,5 +342,51 @@ function ClientDetail({
         </section>
       )}
     </div>
+  );
+}
+
+function UpsellPanel({ up }: { up: Upsell | null }) {
+  if (!up) return null;
+  return (
+    <section className="panel p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold">下一步可以賣</h3>
+        <span className="text-xs text-muted-foreground">{up.ladderName}階梯</span>
+      </div>
+      {up.next ? (
+        <div
+          className={cn(
+            "mt-3 rounded-xl px-4 py-3",
+            up.now ? "bg-st-almost-bg text-st-almost-fg" : "bg-muted",
+          )}
+        >
+          <p className="text-lg font-bold">{up.next}</p>
+          {up.when && <p className="mt-0.5 text-sm">{up.when}</p>}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">這個階梯都買齊了</p>
+      )}
+      <ol className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        {up.steps.map((s, i) => (
+          <li key={s.id} className="flex items-center gap-1.5">
+            {i > 0 && <span className="text-muted-foreground">→</span>}
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 font-semibold",
+                s.state === "done" && "bg-st-progress-bg text-st-progress-fg",
+                s.state === "next" && "bg-primary text-primary-foreground",
+                s.state === "later" && "bg-muted text-muted-foreground",
+              )}
+            >
+              {s.state === "done" ? "✓ " : ""}
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-xs text-muted-foreground">
+        時機：交件滿 30 天推一次，續約前 30 天再推一次。不會自動寄信，由你決定要不要開口。
+      </p>
+    </section>
   );
 }
