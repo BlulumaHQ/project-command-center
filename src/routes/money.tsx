@@ -206,7 +206,7 @@ function WeeklySection({
       {error && <p className="mt-2 text-sm text-st-deadline-fg">{error}</p>}
       {v?.total?.note && (
         <p className="mt-2 rounded-xl bg-primary/10 px-3 py-2 text-sm text-primary">
-          {v.total.note}
+          {shown ? v.total.note : "本週摘要含金額，按「顯示金額」才看得到"}
         </p>
       )}
 
